@@ -1,4 +1,4 @@
-import {ObjectId} from 'mongodb';
+import { Document } from 'mongoose';
 
 export type Category =
     'POLITICS'
@@ -12,25 +12,17 @@ export type Category =
 export type CountryAlpha2 = string;
 export type LanguageAlpha2 = string;
 
-export interface Article {
-    _id: ObjectId;
+export interface Article extends Document {
     title: string;
-    title_translated?: string;
     url: string;
     description: string;
-    description_translated?: string;
     date_published: Date;
     provider: string;
-    language?: LanguageAlpha2;
-    content: string;
+    language: LanguageAlpha2;
     origin_country: CountryAlpha2;
     keywords: string[];
-    source_api: string;
-    schema_version: string;
-    date_scraped: Date;
     category: Category;
     authors?: string[];
     related_countries?: CountryAlpha2[];
     image_url?: string;
-    post_processed: boolean;
 }
