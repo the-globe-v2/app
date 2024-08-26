@@ -1,16 +1,19 @@
 {
   "name": "globe-frontend",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.0.1",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview"
   },
   "dependencies": {
-    "three": "^0.167.1"
+    "gsap": "^3.12.5",
+    "three": "^0.167.1",
+    "three-globe": "^2.31.1"
   },
   "devDependencies": {
+    "@types/geojson": "^7946.0.14",
     "@types/three": "^0.167.2",
     "typescript": "^5.5.3",
     "vite": "^5.4.1"

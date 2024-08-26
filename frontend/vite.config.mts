@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 
 export default defineConfig({
+    assetsInclude: ['**/*.geojson'],
     server: {
         proxy: {
             '/api': {
@@ -8,5 +9,13 @@ export default defineConfig({
                 changeOrigin: true,
             }
         }
+    },
+    resolve: {
+        alias: {
+            'three': 'three'
+        }
+    },
+    optimizeDeps: {
+        include: ['three']
     }
 })
