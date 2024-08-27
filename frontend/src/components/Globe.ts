@@ -1,6 +1,9 @@
 import * as THREE from 'three';
 import ThreeGlobe from 'three-globe';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls';
+import {point} from '@turf/helpers';
+import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
+import gsap from 'gsap';
 
 export class Globe {
     private globe!: ThreeGlobe;
@@ -9,6 +12,10 @@ export class Globe {
     private container: HTMLElement;
     private renderer: THREE.WebGLRenderer;
     private controls: OrbitControls;
+    private raycaster: THREE.Raycaster;
+    private mouse: THREE.Vector2;
+    private countriesGeoJson: any; // To store GeoJSON data
+    private currentlySelectedCountry: any = null; // Track the currently selected country
 
     constructor(container: HTMLElement) {
         this.container = container;
@@ -22,7 +29,7 @@ export class Globe {
             powerPreference: 'high-performance',
         });
         this.renderer.setSize(container.clientWidth, container.clientHeight);
-        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 5));
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
         container.appendChild(this.renderer.domElement);
 
         this.camera.position.z = 250;
@@ -36,10 +43,16 @@ export class Globe {
         this.controls.enableZoom = true;
         this.controls.enablePan = false;
 
+        // Initialize raycaster and mouse vector
+        this.raycaster = new THREE.Raycaster();
+        this.mouse = new THREE.Vector2();
+
         this.initialize().catch(console.error);
 
         this.addLights();
         window.addEventListener('resize', this.onWindowResize.bind(this));
+        window.addEventListener('mousemove', this.onMouseMove.bind(this));
+        window.addEventListener('click', this.onClick.bind(this)); // Use click event to select a country
         this.animate();
     }
 
@@ -53,15 +66,19 @@ export class Globe {
             if (!response.ok) {
                 throw new Error(`Failed to load GeoJSON: ${response.statusText}`);
             }
-            const countries = await response.json();
+            this.countriesGeoJson = await response.json();
 
             this.globe = new ThreeGlobe()
-                .globeImageUrl('/src/assets/white.png')
-                .polygonsData(countries.features)
+                .polygonsData(this.countriesGeoJson.features)
                 .polygonCapColor(() => "rgba(133, 166, 212, 0.8)")
-                .polygonSideColor(() => "rgba(0, 0, 0, 0)") // Transparent sides
-                .polygonStrokeColor(() => '#9e9e9e') // Light gray borders
-                .polygonAltitude(() => 0.01); // Flat polygons
+                .polygonSideColor(() => "rgba(133, 166, 212, 1)") // Transparent sides
+                .polygonStrokeColor(() => 'rgba(200, 160, 80, 0)') // Light gray borders
+                .polygonAltitude(() => 0.005); // Flat polygons
+
+            const material = new THREE.MeshPhongMaterial({
+                color: "rgba(240, 240, 240, 1)",
+            });
+            this.globe.globeMaterial(material)
 
             this.scene.add(this.globe);
         } catch (error) {
@@ -75,11 +92,6 @@ export class Globe {
 
         const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
         directionalLight.position.set(1, 2, 1);
-        directionalLight.castShadow = true;
-        directionalLight.shadow.mapSize.width = 2048;
-        directionalLight.shadow.mapSize.height = 2048;
-        directionalLight.shadow.camera.near = 0.5;
-        directionalLight.shadow.camera.far = 500;
 
         this.scene.add(directionalLight);
     }
@@ -94,5 +106,64 @@ export class Globe {
         this.camera.aspect = this.container.clientWidth / this.container.clientHeight;
         this.camera.updateProjectionMatrix();
         this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
+    }
+
+    private onMouseMove(event: MouseEvent) {
+        // Update mouse coordinates (-1 to 1 range)
+        this.mouse.x = (event.clientX / this.renderer.domElement.clientWidth) * 2 - 1;
+        this.mouse.y = -(event.clientY / this.renderer.domElement.clientHeight) * 2 + 1;
+    }
+
+    private onClick() {
+        // Update the raycaster with the current mouse position
+        this.raycaster.setFromCamera(this.mouse, this.camera);
+
+        // Calculate objects intersecting the raycaster
+        const intersects = this.raycaster.intersectObject(this.globe, true);
+
+        const intersectedPoint = intersects[0].point;
+        const geoCoords = this.globe.toGeoCoords(intersectedPoint);
+
+        const clickedCountry = this.findCountryByCoordinates(geoCoords);
+
+        if (clickedCountry && clickedCountry !== this.currentlySelectedCountry) {
+
+            // Elevate the new selected country with animation
+            this.currentlySelectedCountry = clickedCountry;
+            gsap.to(this.currentlySelectedCountry, {
+                duration: 0.1,
+                onUpdate: () => {
+                    this.globe.polygonAltitude(this.getPolygonAltitude.bind(this));
+                    this.globe.polygonCapColor(this.getPolygonCapColor.bind(this));
+                    this.globe.polygonSideColor(this.getPolygonSideColor.bind(this));
+                },
+            });
+        }
+    }
+
+
+
+    private getPolygonAltitude(d: any): number {
+        return d === this.currentlySelectedCountry ? 0.02 : 0.005;
+    }
+
+    private getPolygonCapColor(d: any): string {
+        return d === this.currentlySelectedCountry ? "rgba(166,212,133,0.9)" : "rgba(133, 166, 212, 0.8)";
+    }
+
+    private getPolygonSideColor(d: any): string {
+        return d === this.currentlySelectedCountry ? "rgba(149,190,119,1)" : "rgba(133, 166, 212, 1)";
+    }
+
+    private findCountryByCoordinates(coords: { lat: number, lng: number }): any | null {
+        const pointToCheck = point([coords.lng, coords.lat]);
+
+        for (const feature of this.countriesGeoJson.features) {
+            if (booleanPointInPolygon(pointToCheck, feature)) {
+                return feature; // Return the whole feature object
+            }
+        }
+
+        return null; // If no country was found
     }
 }
