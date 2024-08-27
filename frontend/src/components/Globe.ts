@@ -19,8 +19,12 @@ export class Globe {
         this.scene.background = new THREE.Color(0xffffff);
 
         this.camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
-        this.renderer = new THREE.WebGLRenderer({ antialias: true });
+        this.renderer = new THREE.WebGLRenderer({
+            antialias: true, // Enable antialiasing
+            powerPreference: 'high-performance', // Optimize performance
+        });
         this.renderer.setSize(container.clientWidth, container.clientHeight);
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 5)); // Limit pixel ratio to 5 for decent performance
         container.appendChild(this.renderer.domElement);
 
         this.camera.position.z = 250;
@@ -42,11 +46,11 @@ export class Globe {
             .polygonSideColor(() => 'rgba(0, 100, 0, 0.15)')
             .polygonStrokeColor(() => '#111');
 
+        this.globe.atmosphereColor('#b0c4de'); // Light blue-gray atmosphere
+        this.globe.atmosphereAltitude(0.35); // Increase the altitude for a softer atmosphere look
 
         this.scene.add(this.globe);
         this.addLights();
-        this.globe.atmosphereColor('gray');
-        this.globe.atmosphereAltitude(0.25)
 
         window.addEventListener('resize', this.onWindowResize.bind(this));
 
@@ -54,8 +58,22 @@ export class Globe {
     }
 
     private addLights() {
-        const ambientLight = new THREE.AmbientLight(0xffffff, 4);
+        // Adjust ambient light intensity
+        const ambientLight = new THREE.AmbientLight(0xffffff, 2.5);
         this.scene.add(ambientLight);
+
+        // Add directional light for shadow casting
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
+        directionalLight.position.set(1, 2, 1); // Position the light to create interesting shadows
+        directionalLight.castShadow = true; // Enable shadows for this light
+
+        // Configure shadow properties
+        directionalLight.shadow.mapSize.width = 2048; // Increase shadow map size for better quality
+        directionalLight.shadow.mapSize.height = 2048;
+        directionalLight.shadow.camera.near = 0.5; // Adjust the shadow camera frustum
+        directionalLight.shadow.camera.far = 500;
+
+        this.scene.add(directionalLight);
     }
 
     private animate() {
