@@ -38,6 +38,8 @@ export class Globe {
         this.initialize().catch(console.error);
         this.addEventListeners();
         this.animate();
+
+        this.animateCameraZoomIn(); // Start the zoom-in animation
     }
 
     /**
@@ -55,8 +57,30 @@ export class Globe {
     private createCamera(): THREE.PerspectiveCamera {
         const {clientWidth, clientHeight} = this.container;
         const camera = new THREE.PerspectiveCamera(75, clientWidth / clientHeight, 0.1, 1000);
-        camera.position.z = 250;
+
+        // Start the camera far away
+        camera.position.z = 10000;
         return camera;
+    }
+
+    private animateCameraZoomIn(): void {
+        // Define the target position for the camera
+        const targetZ = 250;
+
+        // Animate the camera's z-position to the target position
+        gsap.to(this.camera.position, {
+            duration: 3, // Duration of the zoom-in animation (3 seconds in this case)
+            z: targetZ,
+            ease: 'power2.inOut', // Easing function for smooth animation
+            onUpdate: () => {
+                // Ensure the camera keeps looking at the globe's center during the animation
+                this.camera.lookAt(new THREE.Vector3(0, 0, 0));
+            },
+            onComplete: () => {
+                // Ensure controls are correctly updated after the animation
+                this.controls.update();
+            }
+        });
     }
 
     /**
@@ -91,8 +115,19 @@ export class Globe {
      * Initializes the globe by loading GeoJSON data and adding lights to the scene.
      */
     private async initialize(): Promise<void> {
+        // Preload the globe but don't add it to the scene yet
         await this.loadGeoJsonData();
         this.addLights();
+
+        // Hide the globe initially
+        this.renderer.domElement.style.visibility = 'hidden';
+
+        // Wait for a short duration to ensure the globe is loaded
+        setTimeout(() => {
+            // Show the globe and start the animation
+            this.renderer.domElement.style.visibility = 'visible';
+            this.animateCameraZoomIn();
+        }, 800); // Adjust delay as needed
     }
 
     /**
@@ -118,7 +153,7 @@ export class Globe {
      * Creates the ThreeGlobe instance and configures its visual properties.
      */
     private createGlobe(): ThreeGlobe {
-        return new ThreeGlobe()
+        return new ThreeGlobe({animateIn: false, waitForGlobeReady: false})
             .polygonsData(this.countriesGeoJson.features)
             .polygonCapColor(() => this.initialCountryColor) // Landmass color
             .polygonSideColor(() => this.initialCountrySideColor)  // Color of the sides of the elevation
@@ -191,7 +226,7 @@ export class Globe {
      * Checks if the mouse has moved significantly on mouse up to determine if dragging occurred.
      */
     private onMouseUp(): void {
-        if (this.lastMousePosition.distanceTo(this.mouse) < 0.001) this.isDragging = false;
+        if (this.lastMousePosition.distanceTo(this.mouse) < 0.01) this.isDragging = false;
     }
 
     /**
