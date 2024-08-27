@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite'
 
 export default defineConfig({
-    assetsInclude: ['**/*.geojson'],
+    assetsInclude: ['**/*.geojson'], // Needed?
     server: {
         proxy: {
             '/api': {
