@@ -1,7 +1,9 @@
 import { defineConfig } from 'vite'
+import vue from '@vitejs/plugin-vue'
 
 export default defineConfig({
-    assetsInclude: ['**/*.geojson'], // Needed?
+    plugins: [vue()],
+    assetsInclude: ['**/*.geojson'],
     server: {
         proxy: {
             '/api': {
@@ -12,10 +14,11 @@ export default defineConfig({
     },
     resolve: {
         alias: {
-            'three': 'three'
+            'three': 'three',
+            '@': '/src'
         }
     },
     optimizeDeps: {
-        include: ['three']
+        include: ['three', 'vue']
     }
 })
