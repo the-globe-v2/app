@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import ThreeGlobe from 'three-globe';
-import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls';
-import {point} from '@turf/helpers';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import { point } from '@turf/helpers';
 import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
 import gsap from 'gsap';
 
@@ -16,6 +16,8 @@ export class Globe {
     private mouse: THREE.Vector2;
     private countriesGeoJson: any; // To store GeoJSON data
     private currentlySelectedCountry: any = null; // Track the currently selected country
+    private isDragging: boolean = false; // Flag to detect dragging
+    private lastMousePosition: THREE.Vector2;
 
     constructor(container: HTMLElement) {
         this.container = container;
@@ -46,12 +48,15 @@ export class Globe {
         // Initialize raycaster and mouse vector
         this.raycaster = new THREE.Raycaster();
         this.mouse = new THREE.Vector2();
+        this.lastMousePosition = new THREE.Vector2();
 
         this.initialize().catch(console.error);
 
         this.addLights();
         window.addEventListener('resize', this.onWindowResize.bind(this));
         window.addEventListener('mousemove', this.onMouseMove.bind(this));
+        window.addEventListener('mousedown', this.onMouseDown.bind(this));
+        window.addEventListener('mouseup', this.onMouseUp.bind(this));
         window.addEventListener('click', this.onClick.bind(this)); // Use click event to select a country
         this.animate();
     }
@@ -112,36 +117,73 @@ export class Globe {
         // Update mouse coordinates (-1 to 1 range)
         this.mouse.x = (event.clientX / this.renderer.domElement.clientWidth) * 2 - 1;
         this.mouse.y = -(event.clientY / this.renderer.domElement.clientHeight) * 2 + 1;
+
+        if (event.buttons === 1) {
+            this.isDragging = true;
+        }
+    }
+
+    private onMouseDown() {
+        // Record the initial mouse position
+        this.lastMousePosition.set(this.mouse.x, this.mouse.y);
+    }
+
+    private onMouseUp() {
+        // Check if the mouse has moved significantly
+        if (this.lastMousePosition.distanceTo(this.mouse) < 0.001) {
+            this.isDragging = false;
+        }
     }
 
     private onClick() {
+        if (this.isDragging) {
+            this.isDragging = false;
+            return; // Skip selection if the globe was dragged
+        }
+
         // Update the raycaster with the current mouse position
         this.raycaster.setFromCamera(this.mouse, this.camera);
 
         // Calculate objects intersecting the raycaster
         const intersects = this.raycaster.intersectObject(this.globe, true);
 
-        const intersectedPoint = intersects[0].point;
-        const geoCoords = this.globe.toGeoCoords(intersectedPoint);
+        if (intersects.length > 0) {
+            const intersectedPoint = intersects[0].point;
+            const geoCoords = this.globe.toGeoCoords(intersectedPoint);
 
-        const clickedCountry = this.findCountryByCoordinates(geoCoords);
+            const clickedCountry = this.findCountryByCoordinates(geoCoords);
 
-        if (clickedCountry && clickedCountry !== this.currentlySelectedCountry) {
-
-            // Elevate the new selected country with animation
-            this.currentlySelectedCountry = clickedCountry;
-            gsap.to(this.currentlySelectedCountry, {
-                duration: 0.1,
-                onUpdate: () => {
-                    this.globe.polygonAltitude(this.getPolygonAltitude.bind(this));
-                    this.globe.polygonCapColor(this.getPolygonCapColor.bind(this));
-                    this.globe.polygonSideColor(this.getPolygonSideColor.bind(this));
-                },
-            });
+            if (clickedCountry === this.currentlySelectedCountry) {
+                this.deselectCountry();
+            } else if (clickedCountry) {
+                this.selectCountry(clickedCountry);
+            }
         }
     }
 
+    private deselectCountry() {
+        this.currentlySelectedCountry = null;
+        gsap.to(this.globe, {
+            duration: 0.1,
+            onUpdate: () => {
+                this.globe.polygonAltitude(this.getPolygonAltitude.bind(this));
+                this.globe.polygonCapColor(this.getPolygonCapColor.bind(this));
+                this.globe.polygonSideColor(this.getPolygonSideColor.bind(this));
+            },
+        });
+    }
 
+    private selectCountry(country: any) {
+        this.currentlySelectedCountry = country;
+        gsap.to(this.globe, {
+            duration: 0.1,
+            onUpdate: () => {
+                this.globe.polygonAltitude(this.getPolygonAltitude.bind(this));
+                this.globe.polygonCapColor(this.getPolygonCapColor.bind(this));
+                this.globe.polygonSideColor(this.getPolygonSideColor.bind(this));
+            },
+        });
+    }
 
     private getPolygonAltitude(d: any): number {
         return d === this.currentlySelectedCountry ? 0.02 : 0.005;
