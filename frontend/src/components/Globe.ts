@@ -16,7 +16,7 @@ export class Globe {
         this.scene = new THREE.Scene();
 
         // Set background color to white
-        this.scene.background = new THREE.Color(0xffffff);
+        this.scene.background = new THREE.Color(0xededed);
 
         this.camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
         this.renderer = new THREE.WebGLRenderer({
@@ -36,6 +36,10 @@ export class Globe {
         this.controls.rotateSpeed = 0.5;
         this.controls.minDistance = 150;
         this.controls.maxDistance = 500;
+
+        // Disable multi-touch panning
+        this.controls.enableZoom = true; // Enable zooming (pinch gesture)
+        this.controls.enablePan = false;  // Disable panning
 
         // Initialize the globe
         this.globe = new ThreeGlobe()
