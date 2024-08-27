@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import ThreeGlobe from 'three-globe';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
-import { point } from '@turf/helpers';
+import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls';
+import {point} from '@turf/helpers';
 import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
 import gsap from 'gsap';
 
@@ -39,7 +39,7 @@ export class Globe {
         this.controls = new OrbitControls(this.camera, this.renderer.domElement);
         this.controls.enableDamping = true;
         this.controls.dampingFactor = 0.05;
-        this.controls.rotateSpeed = 0.5;
+        this.controls.rotateSpeed = 0.4;
         this.controls.minDistance = 150;
         this.controls.maxDistance = 500;
         this.controls.enableZoom = true;
@@ -157,6 +157,7 @@ export class Globe {
                 this.deselectCountry();
             } else if (clickedCountry) {
                 this.selectCountry(clickedCountry);
+                this.centerCameraOnCountry(clickedCountry);
             }
         }
     }
@@ -183,6 +184,124 @@ export class Globe {
                 this.globe.polygonSideColor(this.getPolygonSideColor.bind(this));
             },
         });
+    }
+
+    private centerCameraOnCountry(country: any) {
+        // Get the centroid of the country
+        const centroid = this.getCountryCentroid(country);
+
+
+        if (centroid) {
+            const {lat, lng} = centroid;
+
+            // Convert the lat/lng to Cartesian coordinates
+            const targetPosition = this.globe.getCoords(lat, lng);
+
+            // Create a vector for the target position
+            const targetVector = new THREE.Vector3(targetPosition.x, targetPosition.y, targetPosition.z);
+
+            // Calculate the direction vector from the globe center to the target position
+            const direction = targetVector.clone().normalize();
+
+            // Set the desired distance from the country to zoom in closer
+            const desiredDistance = 150; // Adjust this to control zoom level
+
+            // Calculate the new camera position by moving along the direction vector
+            const newCamPosition = direction.multiplyScalar(desiredDistance);
+
+            // Use GSAP to animate the camera position
+            gsap.to(this.camera.position, {
+                duration: 0.5, // Control the duration of the zoom animation
+                x: newCamPosition.x,
+                y: newCamPosition.y,
+                z: newCamPosition.z,
+                ease: "sine.inOut", // Smoother easing for the animation
+                onUpdate: () => {
+                    this.camera.lookAt(new THREE.Vector3(0, 0, 0)); // Ensure the camera always looks at the globe's center
+                }
+            });
+
+            // Ensure OrbitControls continue to pivot around the globe center
+            this.controls.target.set(0, 0, 0);
+            this.controls.update();
+        }
+    }
+
+    /**
+     * Calculates the centroid (geographic center) of a given country feature.
+     *
+     * The method handles both `Polygon` and `MultiPolygon` geometries from the GeoJSON data.
+     *
+     * - For `Polygon` geometries, the centroid is calculated as the average of the latitudes
+     *   and longitudes of the polygon's vertices.
+     * - For `MultiPolygon` geometries, the method selects the polygon with the largest area
+     *   (typically the main landmass) and calculates the centroid based on that polygon.
+     *
+     * This approach ensures that for countries with disjoint territories (e.g., France with
+     * both mainland and overseas regions), the centroid calculation is based on the most
+     * significant landmass, avoiding incorrect centroid locations like overseas territories.
+     *
+     * @param {any} country - The GeoJSON feature representing the country, containing a geometry
+     *                        of type `Polygon` or `MultiPolygon`.
+     *
+     * @returns {{ lat: number, lng: number } | null} - An object containing the latitude and
+     *                                                 longitude of the centroid, or `null` if
+     *                                                 the geometry type is unsupported.
+     *
+     * @example
+     * // Assuming `country` is a GeoJSON feature for France:
+     * const centroid = this.getCountryCentroid(country);
+     * console.log(centroid); // { lat: 46.603354, lng: 1.888334 } (Approximate centroid for mainland France)
+     */
+    private getCountryCentroid(country: any): { lat: number, lng: number } | null {
+        const {type, coordinates} = country.geometry;
+
+        let coords: number[][] = [];
+
+        if (type === 'Polygon') {
+            // For Polygon, take the first set of coordinates
+            coords = coordinates[0];
+        } else if (type === 'MultiPolygon') {
+            // For MultiPolygon, find the largest polygon by area
+            let maxArea = 0;
+            coordinates.forEach((polygon: number[][][]) => {
+                const area = this.calculatePolygonArea(polygon[0]);
+                if (area > maxArea) {
+                    maxArea = area;
+                    coords = polygon[0]; // Take the largest polygon's first set of coordinates
+                }
+            });
+        } else {
+            console.error('Unsupported geometry type:', type);
+            return null;
+        }
+
+        // Calculate centroid of the selected polygon
+        let lngSum = 0, latSum = 0;
+        coords.forEach(([lng, lat]) => {
+            lngSum += lng;
+            latSum += lat;
+        });
+
+        const numCoords = coords.length;
+        return {
+            lat: latSum / numCoords,
+            lng: lngSum / numCoords,
+        };
+    }
+
+// Helper function to calculate the area of a polygon for centroid calculation
+    private calculatePolygonArea(coords: number[][]): number {
+        let area = 0;
+        const numCoords = coords.length;
+
+        for (let i = 0; i < numCoords; i++) {
+            const [x1, y1] = coords[i];
+            const [x2, y2] = coords[(i + 1) % numCoords];
+            area += x1 * y2 - x2 * y1;
+        }
+
+        return Math.abs(area / 2);
     }
 
     private getPolygonAltitude(d: any): number {
