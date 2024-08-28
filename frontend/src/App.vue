@@ -1,36 +1,59 @@
 <template>
-  <div id="app">
-    <div id="globe-container"></div>
+  <div id="app" class="relative">
+    <div id="globe-container" class="w-full h-screen"></div>
+    <ArticleSidePanel
+        :is-open="isSidePanelOpen"
+        :country="selectedCountry"
+        :country-code="selectedCountryCode"
+        @close="closeSidePanel"
+    />
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, onMounted } from 'vue';
+import { defineComponent, ref, onMounted } from 'vue';
 import { Globe } from './components/Globe';
+import ArticleSidePanel from './components/ArticleSidePanel.vue';
 
 export default defineComponent({
   name: 'App',
+  components: {
+    ArticleSidePanel,
+  },
   setup() {
+    const isSidePanelOpen = ref(false);
+    const selectedCountry = ref('');
+    const selectedCountryCode = ref('');
+
+    const openSidePanel = (country: string, cc: string) => {
+      selectedCountry.value = country;
+      selectedCountryCode.value = cc;
+      isSidePanelOpen.value = true;
+    };
+
+    const closeSidePanel = () => {
+      isSidePanelOpen.value = false;
+    };
+
     onMounted(() => {
       const container = document.getElementById('globe-container');
       if (container) {
-        new Globe(container);
+        const globe = new Globe(container);
+        globe.addEventListener('countrySelected', (event: Event) => {
+          const customEvent = event as CustomEvent;
+          const country = customEvent.detail.properties.name;
+          const cc = customEvent.detail.properties.iso_a2;
+          openSidePanel(country, cc);
+        });
       }
     });
-  }
+
+    return {
+      isSidePanelOpen,
+      selectedCountry,
+      selectedCountryCode,
+      closeSidePanel,
+    };
+  },
 });
 </script>
-
-<style>
-#app {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-#globe-container {
-  flex-grow: 1;
-  width: 100%;
-}
-</style>

@@ -1,3 +1,7 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
 body, html {
   margin: 0;
   padding: 0;
@@ -5,14 +9,17 @@ body, html {
   width: 100%;
 }
 
+body {
+  background: linear-gradient(135deg, #3a7bd5 0%, #CFDEF3 100%);
+}
+
 #app {
   width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
 }
 
 #globe-container {
-  flex-grow: 1;
   width: 100%;
+  height: 100%;
 }
