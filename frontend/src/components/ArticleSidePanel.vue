@@ -128,7 +128,7 @@ const fetchArticles = async () => {
     error.value = 'Failed to fetch articles. Please try again later.'
   } finally {
     // Add a small delay before setting loading to false
-    await new Promise(resolve => setTimeout(resolve, 500)) // 500ms delay
+    await new Promise(resolve => setTimeout(resolve, 500))
     loading.value = false
   }
 }
