@@ -2,6 +2,9 @@
   <div
       class="fixed right-4 top-4 bottom-4 w-full max-w-md bg-white shadow-lg rounded-2xl overflow-hidden transition-transform duration-300 ease-in-out transform"
       :class="{ 'translate-x-0': isOpen, 'translate-x-[120%]': !isOpen }"
+      @click.stop
+      @mousedown.stop
+      @touchstart.stop
   >
     <div class="h-full flex flex-col">
       <div class="p-4 bg-gradient-to-r from-blue-600 to-blue-400 text-white flex items-center justify-between">
@@ -53,14 +56,18 @@
 
 <style scoped>
 .hide-scrollbar {
-  scrollbar-width: none;  /* Firefox */
-  -ms-overflow-style: none;  /* Internet Explorer 10+ */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
 }
 
 .hide-scrollbar::-webkit-scrollbar {
   width: 0;
   height: 0;
-  display: none;  /* Safari and Chrome */
+  display: none; /* Safari and Chrome */
+}
+
+div[class*="fixed"] {
+  pointer-events: all !important; /* Allow clicks on the panel */
 }
 </style>
 
@@ -100,7 +107,10 @@ const formatDate = (dateString: string): string => {
 }
 
 const getCountryFlag = (countryCode: string): string => {
-  return `http://purecatamphetamine.github.io/country-flag-icons/3x2/${countryCode.toUpperCase()}.svg`;
+  if (!countryCode) {
+    return '/src/assets/planet-earth-flag.jpg';
+  }
+  return `https://purecatamphetamine.github.io/country-flag-icons/3x2/${countryCode.toUpperCase()}.svg`;
 }
 
 
