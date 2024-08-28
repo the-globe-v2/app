@@ -40,22 +40,26 @@
                class="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow p-4">
             <div class="flex mb-3">
               <img
-                  :src="item.image_url || '/src/assets/default-thumbnail.png'"
+                  :src="item?.image_url || '/src/assets/default-thumbnail.png'"
                   alt="Article Thumbnail"
                   class="w-1/3 h-24 object-cover rounded-lg mr-4"
               >
               <div class="flex-grow flex flex-col justify-between">
-                <h3 class="text-lg font-semibold leading-tight">{{ truncateText(item.title, 75, true) }}</h3>
+                <h3 class="text-lg font-semibold leading-tight">{{
+                    truncateText(item?.title || 'No title', 75, true)
+                  }}</h3>
                 <div class="flex justify-between items-center text-xs">
-                  <span class="text-gray-600">📰 {{ item.provider }}</span>
-                  <span class="text-gray-500">{{ formatDate(item.date_published) }}</span>
+                  <span class="text-gray-600">📰 {{ item?.provider || 'Unknown provider' }}</span>
+                  <span class="text-gray-500">{{ formatDate(item?.date_published) }}</span>
                 </div>
               </div>
             </div>
-            <p class="text-sm text-gray-600 mb-2">{{ truncateText(item.description, 200) }}</p>
+            <p class="text-sm text-gray-600 mb-2">{{
+                truncateText(item?.description || 'No description available', 200)
+              }}</p>
             <div class="flex justify-between items-center text-xs">
-              <span class="text-blue-600">#{{ item.category }}</span>
-              <a :href="item.url" target="_blank" rel="noopener noreferrer"
+              <span class="text-blue-600">#{{ item?.category || 'Uncategorized' }}</span>
+              <a :href="item?.url" target="_blank" rel="noopener noreferrer"
                  class="text-blue-600 hover:text-blue-800 font-medium">
                 Read More →
               </a>
@@ -85,8 +89,8 @@ div[class*="fixed"] {
 </style>
 
 <script setup lang="ts">
-import {ref, watch} from 'vue'
-import axios from 'axios'
+import {ref, watch, onMounted} from 'vue';
+import {fetchArticleCollections, fetchArticles} from "../services/api";
 
 const props = defineProps<{
   isOpen: boolean
@@ -105,37 +109,84 @@ const loading = ref(false)
 const error = ref('')
 const message = ref('')
 
-const fetchArticles = async () => {
-  loading.value = true
-  error.value = ''
-  message.value = ''
+const articleCollections = ref<any[]>([]); // COMMENT
+const articleCache = ref<Map<string, any>>(new Map()); // Cache articles to avoid re-fetching
+
+const fetchCollections = async () => {
+  loading.value = true;
+  error.value = '';
+  message.value = '';
 
   try {
-    const response = await axios.get('/api/articles', {
-      params: {
-        origin_country: props.countryCode,
-        date_start: props.dateStart,
-        date_end: props.dateEnd
-      }
-    })
-    trendingItems.value = response.data
+    articleCollections.value = await fetchArticleCollections(props.dateStart, props.dateEnd);
+  } catch (err) {
+    console.error('Error fetching article collections:', err);
+    error.value = 'Failed to fetch article collections. Please try again later.';
+  } finally {
+    loading.value = false;
+  }
+};
 
-    if (trendingItems.value.length === 0) {
-      message.value = 'This country is not yet supported. 🙃'
+const fetchArticlesForCountry = async () => {
+  if (!props.countryCode) return;
+
+  loading.value = true;
+  error.value = '';
+  message.value = '';
+
+  try {
+    const countryCollection = articleCollections.value
+        .flatMap(collection => collection.countries)
+        .filter(country => country.country === props.countryCode);
+
+    const urls = countryCollection.flatMap(collection => collection.article_urls);
+
+    if (urls.length === 0) {
+      trendingItems.value = []; // Clear only if no articles found
+      message.value = 'No articles found for this country in the selected date range.';
+      return;
+    }
+
+    const cachedArticles = urls.filter(url => articleCache.value.has(url)).map(url => articleCache.value.get(url));
+    const uncachedUrls = urls.filter(url => !articleCache.value.has(url));
+
+    let newArticles = [];
+    if (uncachedUrls.length > 0) {
+      newArticles = await fetchArticles(uncachedUrls);
+      newArticles.forEach(article => articleCache.value.set(article.url, article));
+    }
+
+    const updatedArticles = [...cachedArticles, ...newArticles];
+
+    if (updatedArticles.length === 0) {
+      message.value = 'No articles found for this country in the selected date range.';
+    } else {
+      trendingItems.value = updatedArticles; // Update only when new articles are ready
     }
   } catch (err) {
-    console.error('Error fetching articles:', err)
-    error.value = 'Failed to fetch articles. Please try again later.'
+    console.error('Error fetching articles:', err);
+    error.value = 'Failed to fetch articles. Please try again later.';
   } finally {
-    // Add a small delay before setting loading to false
-    await new Promise(resolve => setTimeout(resolve, 500))
-    loading.value = false
+    // Add a 100ms delay before turning off the loading state
+    setTimeout(() => {
+      loading.value = false;
+    }, 100);
   }
-}
+};
 
-watch(() => props.countryCode, fetchArticles)
-watch(() => props.dateStart, fetchArticles)
-watch(() => props.dateEnd, fetchArticles)
+const updateArticles = async () => {
+  await fetchCollections();
+  if (props.countryCode) {
+    await fetchArticlesForCountry();
+  }
+};
+
+onMounted(updateArticles);
+
+watch(() => props.dateStart, updateArticles);
+watch(() => props.dateEnd, updateArticles);
+watch(() => props.countryCode, fetchArticlesForCountry);
+
 
 const truncateText = (text: string, limit: number = 200, title: boolean = false): string => {
   if (text.length <= limit && title) {

@@ -92,7 +92,7 @@ const quickOptions = [
   {label: '7d', value: '7d'},
 ];
 
-const selectedQuickOption = ref('7d');
+const selectedQuickOption = ref('4d');
 const showCustomDatePicker = ref(false);
 const localStartDate = ref(props.startDate.split('T')[0]);
 const localEndDate = ref(props.endDate.split('T')[0]);
@@ -110,7 +110,6 @@ const selectQuickOption = (option: string) => {
 
   const endDate = new Date();
   let startDate = new Date();
-  console.log(startDate);
 
   switch (option) {
     case '48h':
