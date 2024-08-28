@@ -1,6 +1,6 @@
 <template>
   <div
-      class="fixed right-4 top-4 bottom-4 w-full max-w-md bg-white shadow-lg rounded-2xl overflow-hidden transition-transform duration-300 ease-in-out transform"
+      class="fixed right-4 top-4 bottom-4 w-full max-w-md bg-white shadow-lg rounded-2xl overflow-hidden transition-transform duration-300 ease-in-out transform z-50"
       :class="{ 'translate-x-0': isOpen, 'translate-x-[120%]': !isOpen }"
       @click.stop
       @mousedown.stop
@@ -26,16 +26,29 @@
         </button>
       </div>
       <div class="p-4 overflow-y-auto flex-grow bg-gray-50 hide-scrollbar">
-        <div class="space-y-4">
+        <div v-if="loading" class="flex justify-center items-center h-full">
+          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        </div>
+        <div v-else-if="error" class="text-red-500 text-center">
+          {{ error }}
+        </div>
+        <div v-else-if="message" class="text-gray-500 text-center">
+          {{ message }}
+        </div>
+        <div v-else class="space-y-4">
           <div v-for="(item, index) in trendingItems" :key="index"
                class="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow p-4">
             <div class="flex mb-3">
-              <img :src="item.image_url" alt="Article Thumbnail" class="w-1/3 h-24 object-cover rounded-lg mr-4">
+              <img
+                  :src="item.image_url || '/src/assets/default-thumbnail.png'"
+                  alt="Article Thumbnail"
+                  class="w-1/3 h-24 object-cover rounded-lg mr-4"
+              >
               <div class="flex-grow flex flex-col justify-between">
-                <h3 class="text-lg font-semibold leading-tight">{{ truncateText(item.title, 80, true) }}</h3>
+                <h3 class="text-lg font-semibold leading-tight">{{ truncateText(item.title, 75, true) }}</h3>
                 <div class="flex justify-between items-center text-xs">
                   <span class="text-gray-600">📰 {{ item.provider }}</span>
-                  <span class="text-gray-500">{{ formatDate(item.date_published.$date) }}</span>
+                  <span class="text-gray-500">{{ formatDate(item.date_published) }}</span>
                 </div>
               </div>
             </div>
@@ -72,17 +85,57 @@ div[class*="fixed"] {
 </style>
 
 <script setup lang="ts">
-import {ref} from 'vue'
+import {ref, watch} from 'vue'
+import axios from 'axios'
 
 const props = defineProps<{
   isOpen: boolean
   country: string
   countryCode: string
+  dateStart: string
+  dateEnd: string
 }>()
 
 const emit = defineEmits<{
   (e: 'close'): void
 }>()
+
+const trendingItems = ref([])
+const loading = ref(false)
+const error = ref('')
+const message = ref('')
+
+const fetchArticles = async () => {
+  loading.value = true
+  error.value = ''
+  message.value = ''
+
+  try {
+    const response = await axios.get('/api/articles', {
+      params: {
+        origin_country: props.countryCode,
+        date_start: props.dateStart,
+        date_end: props.dateEnd
+      }
+    })
+    trendingItems.value = response.data
+
+    if (trendingItems.value.length === 0) {
+      message.value = 'This country is not yet supported. 🙃'
+    }
+  } catch (err) {
+    console.error('Error fetching articles:', err)
+    error.value = 'Failed to fetch articles. Please try again later.'
+  } finally {
+    // Add a small delay before setting loading to false
+    await new Promise(resolve => setTimeout(resolve, 500)) // 500ms delay
+    loading.value = false
+  }
+}
+
+watch(() => props.countryCode, fetchArticles)
+watch(() => props.dateStart, fetchArticles)
+watch(() => props.dateEnd, fetchArticles)
 
 const truncateText = (text: string, limit: number = 200, title: boolean = false): string => {
   if (text.length <= limit && title) {
@@ -112,178 +165,4 @@ const getCountryFlag = (countryCode: string): string => {
   }
   return `https://purecatamphetamine.github.io/country-flag-icons/3x2/${countryCode.toUpperCase()}.svg`;
 }
-
-
-// Mock data for trending items (same as before)
-const trendingItems = ref([
-  {
-    "_id": {
-      "$oid": "66ccd22055475d6cb4a4a793"
-    },
-    "title": "Pavel Durov, the libertarian creator of Telegram who irritates Russia and the West",
-    "url": "https://www.msn.com/es-us/noticias/Miami/p%C3%A1vel-d%C3%BArov-el-libertario-creador-de-telegram-que-irrita-a-rusia-y-occidente/ar-AA1psa8T",
-    "description": "The Russian Pavel Durov, creator with his brother of the encrypted messaging network Telegram and currently detained on French soil, has managed to irritate Russia and the West alike with his",
-    "date_published": {
-      "$date": "2024-08-26T12:48:34.000Z"
-    },
-    "provider": "El Nuevo Herald",
-    "language": "es",
-    "origin_country": "US",
-    "keywords": [
-      "Telegram",
-      "Pavel Durov",
-      "encryption",
-      "political pressure",
-      "digital privacy"
-    ],
-    "category": "TECHNOLOGY",
-    "authors": [],
-    "related_countries": [
-      "RU",
-      "FR",
-      "DE",
-      "BR"
-    ],
-    "image_url": "https://www.bing.com/th?id=ORMS.a16e4e5801ebf98da5edefdd8172393e",
-  },
-  {
-    "title": "Horoscope for Monday, August 26 of Walter Mercado's Las Estrellas",
-    "url": "https://www.msn.com/es-us/noticias/Miami/hor%C3%B3scopo-para-lunes-26-de-agosto-de-las-estrellas-de-walter-mercado/ar-AA1ppzpN",
-    "description": "Note to readers: Betty B. Mercado, niece and collaborator of the late astrologer Walter Mercado, continues her legacy by writing Sunday's horoscope. Aries (March 20 - April 18) Nobody",
-    "date_published": {
-      "$date": "2024-08-25T21:30:00.000Z"
-    },
-    "provider": "El Nuevo Herald",
-    "language": "es",
-    "origin_country": "US",
-    "keywords": [
-      "horoscope",
-      "astrology",
-      "personal growth",
-      "financial opportunities",
-      "self-love"
-    ],
-    "category": "SOCIETY",
-    "authors": [],
-    "related_countries": [],
-    "image_url": "https://www.bing.com/th?id=OVFT.yMB54wgkwm80NQrEizdFgS",
-  },
-  {
-    "url": "https://www.msn.com/es-ar/noticias/argentina/javier-milei-ratific%C3%B3-que-vetar%C3%A1-la-reforma-jubilatoria-si-la-aprueba-el-senado/ar-AA1pg58m",
-    "date_published": {
-      "$date": "2024-08-22T16:12:23.000Z"
-    },
-    "provider": "Perfil",
-    "language": "es",
-    "origin_country": "AR",
-    "keywords": [
-      "Javier Milei",
-      "pension reform",
-      "Senate debate",
-      "fiscal balance",
-      "political cost"
-    ],
-    "category": "POLITICS",
-    "authors": [],
-    "related_countries": [],
-    "image_url": "https://www.bing.com/th?id=OVFT.U09AqDdKyGVj7e-3nVPKJS",
-    "title": "Javier Milei confirmed that he will veto the pension reform if it is approved by the Senate",
-    "description": "President Javier Milei ratified that he will veto the Pension Reform that is being debated by the Senate in these hours, if it becomes law, In his hectic activity on social networks, the first"
-  },
-
-  {
-    "url": "https://www.msn.com/en-ph/news/national/nbi-shiela-guo-is-chinese-citizen-zhang-mier/ar-AA1pjEbN",
-    "date_published": {
-      "$date": "2024-08-23T12:21:37.000Z"
-    },
-    "provider": "GMA News Online",
-    "language": "en",
-    "origin_country": "PH",
-    "keywords": [
-      "Shiela Guo",
-      "Zhang Mier",
-      "Philippine Offshore Gaming Operator",
-      "obstruction of justice",
-      "immigration law"
-    ],
-    "category": "POLITICS",
-    "authors": [],
-    "related_countries": [
-      "CN",
-      "ID"
-    ],
-    "image_url": "https://www.bing.com/th?id=OVFT.zLkqEZECROkmzFeQE-v3-i",
-    "title": "NBI: Shiela Guo is Chinese citizen Zhang Mier",
-    "description": "Shiela Guo, sister of dismissed Bamban, Tarlac Mayor Alice Guo, is a Chinese citizen named Zhang Mier who \"fraudulently acquired\" a Philippine passport, Philippine officials said Friday upon"
-  },
-  {
-    "url": "https://www.msn.com/da-dk/nyheder/other/man-skulle-tro-det-var-l%C3%B8gn-her-er-lurpak-p%C3%A5-tilbud-til-under-9-kroner/ar-AA1pi9IQ",
-    "date_published": {
-      "$date": "2024-08-23T07:43:48.000Z"
-    },
-    "provider": "Nyheder24.dk",
-    "language": "da",
-    "origin_country": "DK",
-    "keywords": [
-      "Lurpak",
-      "discount",
-      "butter",
-      "Danish market",
-      "consumer behavior"
-    ],
-    "category": "ECONOMY",
-    "authors": [],
-    "related_countries": [],
-    "image_url": "https://www.bing.com/th?id=OVFT.Kb4d0uJNM1BKY-ZSZ8N8ty",
-    "title": "You'd think it was a lie: Here's Lurpak on sale for less than 9 kroner",
-    "description": "It is no secret that Lurpak has a very special place in the hearts of Danes. The well-known and delicious taste has made the popular butter a staple of many breakfast tables, but it can still be"
-  },
-  {
-    "url": "https://www.msn.com/fr-ca/actualites/ontario/quand-les-galeries-d-art-font-les-frais-de-l-embourgeoisement/ar-AA1pm46Y",
-    "date_published": {
-      "$date": "2024-08-24T09:39:55.000Z"
-    },
-    "provider": "Radio-Canada.ca",
-    "language": "fr",
-    "origin_country": "CA",
-    "keywords": [
-      "Propeller Gallery",
-      "emerging artists",
-      "Toronto arts community",
-      "funding challenges",
-      "cultural economy"
-    ],
-    "category": "CULTURE",
-    "authors": [],
-    "related_countries": [],
-    "image_url": "https://www.bing.com/th?id=OVFT.XpzweBmGo4fsEeh4-IP7jS",
-    "title": "When art galleries pay the price of gentrification",
-    "description": "The situation is precarious for some art galleries in Toronto due to the cost of living. Even with public subsidies, many of them are struggling to make ends meet and have to"
-  },
-  {
-    "url": "https://www.msn.com/en-nz/news/other/trump-aides-desperately-trying-to-stop-him-golfing-and-focus-on-election-as-critic-says-he-s-lost-his-mojo-report/ar-AA1pp8dV",
-    "date_published": {
-      "$date": "2024-08-25T15:46:53.000Z"
-    },
-    "provider": "The Independent",
-    "language": "en",
-    "origin_country": "NZ",
-    "keywords": [
-      "Donald Trump",
-      "campaign trail",
-      "Kamala Harris",
-      "2024 election",
-      "political strategy"
-    ],
-    "category": "POLITICS",
-    "authors": [],
-    "related_countries": [
-      "US"
-    ],
-    "image_url": "https://www.bing.com/th?id=OVFT.HhrtJ8GGBqRitSptRVPfvS",
-    "title": "Trump aides desperately trying to stop him golfing and focus on election as critic says he’s ‘lost his mojo’: Report",
-    "description": "Aides to former Donald Trump are reportedly trying to get the former president off the golf course and onto the campaign trail. But as his family visits his Bedminster, New Jersey golf course in"
-  }
-
-])
 </script>

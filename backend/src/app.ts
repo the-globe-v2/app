@@ -1,8 +1,8 @@
 import express from 'express';
 import path from 'path';
-import config from "./config";
-import {connectToDatabase} from "./database/connection";
-import {ArticleModel} from "./database/models/article";
+import config from './config';
+import { connectToDatabase } from './database/connection';
+import articleRoutes from './routes/articles';
 
 const app = express();
 const PORT = config.port;
@@ -12,16 +12,8 @@ app.use(express.json());
 // Connect to MongoDB
 connectToDatabase().then();
 
-// API routes should come first
-app.get('/api/articles', async (req, res) => {
-    try {
-        const articles = await ArticleModel.find().limit(5);
-        res.json(articles);
-    } catch (error) {
-        console.error('Error fetching articles:', error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
+// Use the article routes
+app.use('/api/articles', articleRoutes);
 
 // Serve static files from the frontend build directory
 app.use(express.static(path.join(__dirname, '../../frontend/dist')));

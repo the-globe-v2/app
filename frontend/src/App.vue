@@ -6,13 +6,15 @@
         :country="selectedCountry"
         :country-code="selectedCountryCode"
         @close="closeSidePanel"
+        date-start="2024-08-22T12:48:34.000Z"
+        date-end="2024-08-29T12:48:34.000Z"
     />
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, onMounted } from 'vue';
-import { Globe } from './components/Globe';
+import {defineComponent, ref, onMounted} from 'vue';
+import {Globe} from './components/Globe';
 import ArticleSidePanel from './components/ArticleSidePanel.vue';
 
 export default defineComponent({
