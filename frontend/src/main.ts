@@ -1,13 +1,6 @@
-import './styles/style.css';
-import { Globe } from './components/Globe';
+import { createApp } from 'vue'
+import App from './App.vue'
+import './styles/style.css'
+import './styles/tailwind.css'
 
-const app = document.querySelector<HTMLDivElement>('#app')!;
-
-app.innerHTML = `
-  <div id="globe-container"></div>
-`;
-
-const globeContainer = document.getElementById('globe-container');
-if (globeContainer) {
-    new Globe(globeContainer);
-}
+createApp(App).mount('#app')

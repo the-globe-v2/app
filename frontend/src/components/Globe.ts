@@ -17,18 +17,20 @@ export class Globe {
     private countriesGeoJson: any;
     private currentlySelectedCountry: any = null;
     private isDragging = false;
+    private eventTarget: EventTarget;
 
-    private readonly initialCountryAltitude = 0.003;
+    private readonly initialCountryAltitude = 0.009;
     private readonly selectedCountryAltitude = 0.02;
-    private readonly initialCountryColor = 'rgba(240, 240, 240, 0.8)';
-    private readonly selectedCountryColor = 'rgba(150, 190, 240, 0.9)';
-    private readonly initialCountrySideColor = 'rgba(240, 240, 240, 1)';
-    private readonly selectedCountrySideColor = 'rgba(240, 240, 240 ,1)';
-    private readonly initialCountryBorderColor = 'rgba(0, 0, 0, 0)';
-    private readonly initialOceanColor = 'rgba(0, 44, 89, 1)';
+    private readonly initialCountryColor = 'rgba(240,240,240, 0.9)';
+    private readonly selectedCountryColor = 'rgba(46,204,113, 0.8)';
+    private readonly initialCountrySideColor = 'rgba(240, 240, 240, 0)';
+    private readonly selectedCountrySideColor = 'rgba(132,237,176,1)';
+    private readonly initialCountryBorderColor = 'rgba(53,112,194, 0.1)';
+    private readonly initialOceanColor = 'rgb(133,173,228)';
 
 
     constructor(private container: HTMLElement) {
+        this.eventTarget = new EventTarget();
         this.scene = this.createScene();
         this.camera = this.createCamera();
         this.renderer = this.createRenderer();
@@ -46,9 +48,7 @@ export class Globe {
      * Creates the Three.js scene and sets the background color.
      */
     private createScene(): THREE.Scene {
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color("rgba(247, 247, 247, 1)");
-        return scene;
+        return new THREE.Scene();
     }
 
     /**
@@ -88,11 +88,14 @@ export class Globe {
      */
     private createRenderer(): THREE.WebGLRenderer {
         const renderer = new THREE.WebGLRenderer({
+            alpha: true,
             antialias: true,
             powerPreference: 'high-performance',
         });
         renderer.setSize(this.container.clientWidth, this.container.clientHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+        renderer.setClearColor( 0x000000, 0 );
+
         return renderer;
     }
 
@@ -140,9 +143,9 @@ export class Globe {
 
             this.countriesGeoJson = await response.json();
             this.globe = this.createGlobe();
-            this.globe.showAtmosphere(false);
-            // this.globe.atmosphereColor("rgb(0, 44, 89)");
-            // this.globe.atmosphereAltitude(0.2);
+            this.globe.showAtmosphere(true);
+            this.globe.atmosphereColor("rgb(240, 240, 240)");
+            this.globe.atmosphereAltitude(0.3);
             this.scene.add(this.globe);
         } catch (error) {
             console.error('Error loading GeoJSON:', error);
@@ -253,6 +256,24 @@ export class Globe {
     }
 
     /**
+     * Selects a country, updating the globe's appearance to highlight it.
+     */
+    private selectCountry(country: any): void {
+        this.currentlySelectedCountry = country;
+        gsap.to(this.globe, {
+            duration: 0.1,
+            onUpdate: () => {
+                this.updateGlobeColors();
+            },
+            onComplete: () => {
+                // Emit a 'countrySelected' event with the selected country's name
+                const event = new CustomEvent('countrySelected', {detail: country});
+                this.eventTarget.dispatchEvent(event);
+            }
+        });
+    }
+
+    /**
      * Deselects the currently selected country, resetting the globe's appearance.
      */
     private deselectCountry(): void {
@@ -265,22 +286,6 @@ export class Globe {
         });
     }
 
-    /**
-     * Selects a country, updating the globe's appearance to highlight it.
-     */
-    private selectCountry(country: any): void {
-        this.currentlySelectedCountry = country;
-        gsap.to(this.globe, {
-            duration: 0.1,
-            onUpdate: () => {
-                this.updateGlobeColors();
-            },
-        });
-    }
-
-    /**
-     * Updates the visual properties of the polygons on the globe based on the currently selected country.
-     */
     /**
      * Updates the visual properties of the polygons on the globe based on the currently selected country.
      */
@@ -411,5 +416,14 @@ export class Globe {
         return this.countriesGeoJson.features.find((feature: any) =>
             booleanPointInPolygon(pointToCheck, feature)
         ) || null;
+    }
+
+    // Allow external components to listen for the countrySelected event
+    public addEventListener(type: string, listener: EventListenerOrEventListenerObject): void {
+        this.eventTarget.addEventListener(type, listener);
+    }
+
+    public removeEventListener(type: string, listener: EventListenerOrEventListenerObject): void {
+        this.eventTarget.removeEventListener(type, listener);
     }
 }
