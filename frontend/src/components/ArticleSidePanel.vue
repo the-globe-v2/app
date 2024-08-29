@@ -120,6 +120,7 @@ const props = defineProps<{
 // Component emits
 const emit = defineEmits<{
   (e: 'close'): void
+  (e: 'update-related-countries', relatedCountries: Map<string, number>): void
 }>()
 
 // Component state
@@ -131,7 +132,9 @@ const articleCollections = ref<any[]>([]);
 const articleCache = ref<Map<string, any>>(new Map()); // Cache articles to avoid re-fetching
 
 /**
- * Fetches article collections for the given date range
+ * Fetches article collections for the given date range, updating the articleCollections state
+ * This function serves to preload some relevant data before fetching articles
+ * reducing the loading time and strain on the API.
  */
 const fetchCollections = async () => {
   loading.value = true;
@@ -152,7 +155,8 @@ const fetchCollections = async () => {
 };
 
 /**
- * Fetches articles for the selected country
+ * Fetches articles for the selected country based on the currently loaded collections
+ * It uses the articleCache to avoid re-fetching articles that have already been loaded
  */
 const fetchArticlesForCountry = async () => {
   if (!props.countryCode) return;
@@ -188,13 +192,27 @@ const fetchArticlesForCountry = async () => {
     if (updatedArticles.length === 0) {
       message.value = 'No articles found for this country in the selected date range.';
     } else {
-      trendingItems.value = updatedArticles; // Update only when new articles are ready
+      trendingItems.value = updatedArticles;
+
+      // Create a Map to store related countries and their mention count
+      const relatedCountriesMap = new Map<string, number>();
+
+      updatedArticles.forEach(article => {
+        if (Array.isArray(article.related_countries)) {
+          article.related_countries.forEach(country => {
+            const count = relatedCountriesMap.get(country) || 0;
+            relatedCountriesMap.set(country, count + 1);
+          });
+        }
+      });
+
+      // Emit the related countries data
+      emit('update-related-countries', relatedCountriesMap);
     }
   } catch (err) {
     console.error('Error fetching articles:', err);
     error.value = 'Failed to fetch articles. Please try again later.';
   } finally {
-    // Add a 100ms delay before turning off the loading state
     setTimeout(() => {
       loading.value = false;
     }, 100);
@@ -202,7 +220,30 @@ const fetchArticlesForCountry = async () => {
 };
 
 /**
- * Updates both collections and articles
+ * Processes all given articles to find related countries and emits the result
+ *
+ * @param {any[]} articles - The articles to process as a map, counting how many times each country appears
+ * @returns {Map<string, number>} - A map of related countries and their counts
+ */
+const processRelatedCountries = (articles: any[]): Map<string, number> => {
+  const relatedCountriesMap = new Map<string, number>();
+
+  articles.forEach(article => {
+    if (Array.isArray(article.related_countries)) {
+      article.related_countries.forEach((country: string) => {
+        if (country !== props.countryCode) {  // Exclude the selected country
+          relatedCountriesMap.set(country, (relatedCountriesMap.get(country) || 0) + 1);
+        }
+      });
+    }
+  });
+
+  return relatedCountriesMap;
+};
+
+/**
+ * Updates both collections and articles based on the selected date range and country
+ * This function is called whenever the date range or country changes
  */
 const updateArticles = async () => {
   await fetchCollections();
@@ -221,10 +262,11 @@ watch(() => props.countryCode, fetchArticlesForCountry);
 
 /**
  * Truncates text to a specified length so that it fits within the cards
+ *
  * @param {string} text - The text to truncate
  * @param {number} limit - The maximum length of the text
  * @param {boolean} title - Whether the text is a title (affects truncation behavior)
- * @returns {string} The truncated text
+ * @returns {string} - The truncated text
  */
 const truncateText = (text: string, limit: number = 200, title: boolean = false): string => {
   if (text.length <= limit && title) {
@@ -245,8 +287,9 @@ const truncateText = (text: string, limit: number = 200, title: boolean = false)
 
 /**
  * Formats a date string to a more readable format
+ *
  * @param {string} dateString - The date string to format
- * @returns {string} The formatted date string
+ * @returns {string} - The formatted date string
  */
 const formatDate = (dateString: string): string => {
   const date = new Date(dateString);
@@ -255,8 +298,9 @@ const formatDate = (dateString: string): string => {
 
 /**
  * Gets the URL for a country's flag image
+ *
  * @param {string} countryCode - The country code
- * @returns {string} The URL of the flag image
+ * @returns {string} - The URL of the flag image
  */
 const getCountryFlag = (countryCode: string): string => {
   if (!countryCode) {

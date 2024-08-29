@@ -9,19 +9,20 @@
         :end-date="endDate"
         @update-date-range="updateDateRange"
     />
-    
-    <!-- Article side panel component -->
 
+    <!-- Article side panel component -->
     <ArticleSidePanel
         :is-open="isSidePanelOpen"
         :country="selectedCountry"
         :country-code="selectedCountryCode"
         :date-start="startDate"
         :date-end="endDate"
-        @close="closeSidePanel"
+        @close="handleSidePanelClose"
+        @update-related-countries="updateRelatedCountries"
     />
   </div>
 </template>
+
 
 <script setup lang="ts">
 import {ref, onMounted} from 'vue';
@@ -36,8 +37,9 @@ import DateRangeSelector from './components/DateRangeSelector.vue';
  * date range selection, and the article side panel.
  */
 
-// Reactive state
+let globeInstance: Globe | null = null;
 
+// Reactive state
 const isSidePanelOpen = ref(false);
 const selectedCountry = ref('');
 const selectedCountryCode = ref('');
@@ -69,19 +71,42 @@ const openSidePanel = (country: string, cc: string) => {
   isSidePanelOpen.value = true;
 };
 
+
+/**
+ * Deselects the currently selected country and closes the side panel
+ */
+const handleSidePanelClose = () => {
+  closeSidePanel();
+  if (globeInstance) {
+    globeInstance.deselectCountry();
+  }
+};
+
 /**
  * Closes the side panel
  */
 const closeSidePanel = () => {
   isSidePanelOpen.value = false;
+  selectedCountry.value = '';
+  selectedCountryCode.value = '';
+};
+
+/**
+ * Updates the related countries arcs on the globe visualization
+ * @param {Map<string, number>} relatedCountries - A map of related countries and their counts
+ */
+const updateRelatedCountries = (relatedCountries: Map<string, number>) => {
+  if (globeInstance && selectedCountryCode.value) {
+    globeInstance.updateArcs(selectedCountryCode.value, relatedCountries);
+  }
 };
 
 // Lifecycle hooks
 onMounted(() => {
   const container = document.getElementById('globe-container');
   if (container) {
-    const globe = new Globe(container);
-    globe.addEventListener('countrySelected', (event: Event) => {
+    globeInstance = new Globe(container);
+    globeInstance.addEventListener('countrySelected', (event: Event) => {
       const customEvent = event as CustomEvent;
       const country = customEvent.detail.properties.name;
       const cc = customEvent.detail.properties.iso_a2;

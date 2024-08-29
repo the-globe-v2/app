@@ -18,6 +18,7 @@ export class Globe {
     private currentlySelectedCountry: any = null;
     private isDragging = false;
     private eventTarget: EventTarget;
+    private arcs: any[] = [];
 
     private readonly initialCountryAltitude = 0.009;
     private readonly selectedCountryAltitude = 0.02;
@@ -29,6 +30,11 @@ export class Globe {
     private readonly initialOceanColor = 'rgb(133,173,228)';
 
 
+    /**
+     * Creates a new Globe instance and initializes the Three.js scene.
+     *
+     * @param {HTMLElement} container - The container element to append the globe to.
+     */
     constructor(private container: HTMLElement) {
         this.eventTarget = new EventTarget();
         this.scene = this.createScene();
@@ -53,6 +59,8 @@ export class Globe {
 
     /**
      * Creates the camera and positions it at a default distance from the globe.
+     *
+     * @returns {THREE.PerspectiveCamera} The configured camera instance.
      */
     private createCamera(): THREE.PerspectiveCamera {
         const {clientWidth, clientHeight} = this.container;
@@ -85,6 +93,8 @@ export class Globe {
 
     /**
      * Creates the WebGL renderer and configures it with antialiasing and high performance.
+     *
+     * @returns {THREE.WebGLRenderer} The configured renderer instance.
      */
     private createRenderer(): THREE.WebGLRenderer {
         const renderer = new THREE.WebGLRenderer({
@@ -94,13 +104,15 @@ export class Globe {
         });
         renderer.setSize(this.container.clientWidth, this.container.clientHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-        renderer.setClearColor( 0x000000, 0 );
+        renderer.setClearColor(0x000000, 0);
 
         return renderer;
     }
 
     /**
      * Sets up the orbit controls to allow for smooth camera movement around the globe.
+     *
+     * @returns {OrbitControls} The configured OrbitControls instance.
      */
     private createControls(): OrbitControls {
         const controls = new OrbitControls(this.camera, this.renderer.domElement);
@@ -116,6 +128,8 @@ export class Globe {
 
     /**
      * Initializes the globe by loading GeoJSON data and adding lights to the scene.
+     *
+     * @returns {Promise<void>} A promise that resolves when the globe is ready.
      */
     private async initialize(): Promise<void> {
         // Preload the globe but don't add it to the scene yet
@@ -135,6 +149,8 @@ export class Globe {
 
     /**
      * Fetches the GeoJSON data, initializes the globe with country polygons, and adds it to the scene.
+     *
+     * @returns {Promise<void>} A promise that resolves when the GeoJSON data is loaded.
      */
     private async loadGeoJsonData(): Promise<void> {
         try {
@@ -177,6 +193,46 @@ export class Globe {
     }
 
     /**
+     * Updates the arcs on the globe to represent relationships between countries.
+     * This is triggered whenever a new country is selected.
+     *
+     * @param fromCountry - The ISO 3166-1 alpha-2 country code of the country being selected.
+     * @param relatedCountries - A map of related country codes and the number of mentions.
+     */
+    public updateArcs(fromCountry: string, relatedCountries: Map<string, number>): void {
+        // Clear previous arcs
+        this.arcs = [];
+
+        const fromCoords = this.getCountryCentroid(this.findCountryByCode(fromCountry));
+        if (!fromCoords) return;
+
+        relatedCountries.forEach((mentions, toCountry) => {
+            const toCoords = this.getCountryCentroid(this.findCountryByCode(toCountry));
+            if (toCoords) {
+                const distance = this.calculateDistance(fromCoords, toCoords);
+                this.arcs.push({
+                    startLat: fromCoords.lat,
+                    startLng: fromCoords.lng,
+                    endLat: toCoords.lat,
+                    endLng: toCoords.lng,
+                    altitude: this.getArcAltitude(distance),
+                    stroke: this.getArcStroke(mentions)
+                });
+            }
+        });
+
+        this.globe
+            .arcsData(this.arcs)
+            .arcColor(() => 'rgba(255, 100, 50, 0.5)')
+            .arcAltitude('altitude')
+            .arcStroke('stroke')
+            .arcDashLength(0.9)
+            .arcDashGap(0.5)
+            .arcDashAnimateTime(4000);
+    }
+
+
+    /**
      * Binds the necessary event listeners for user interaction.
      */
     private addEventListeners(): void {
@@ -208,6 +264,8 @@ export class Globe {
 
     /**
      * Tracks mouse movement, updating the raycasting coordinates and detecting dragging.
+     *
+     * @param event - The mousemove event.
      */
     private onMouseMove(event: MouseEvent): void {
         this.mouse.set(
@@ -278,6 +336,7 @@ export class Globe {
      */
     private deselectCountry(): void {
         this.currentlySelectedCountry = null;
+        this.clearArcs();
         gsap.to(this.globe, {
             duration: 0.1,
             onUpdate: () => {
@@ -285,6 +344,15 @@ export class Globe {
             },
         });
     }
+
+    /**
+     * Clears all arcs from the globe.
+     */
+    private clearArcs(): void {
+        this.arcs = [];
+        this.globe.arcsData([]);
+    }
+
 
     /**
      * Updates the visual properties of the polygons on the globe based on the currently selected country.
@@ -304,6 +372,8 @@ export class Globe {
 
     /**
      * Centers the camera on the selected country, animating the transition.
+     *
+     * @param country - The GeoJSON feature of the country to center on.
      */
     private centerCameraOnCountry(country: any): void {
         const centroid = this.getCountryCentroid(country);
@@ -351,13 +421,15 @@ export class Globe {
      * @returns {{ lat: number, lng: number } | null} - The centroid's latitude and longitude or `null` if unsupported.
      */
     private getCountryCentroid(country: any): { lat: number, lng: number } | null {
+        if (!country || !country.geometry) return null;
+
         const {type, coordinates} = country.geometry;
         let coords: number[][] = [];
 
         if (type === 'Polygon') {
-            coords = coordinates[0]; // For Polygon, take the first set of coordinates
+            coords = coordinates[0];
         } else if (type === 'MultiPolygon') {
-            coords = this.getLargestPolygonCoordinates(coordinates); // For MultiPolygon, find the largest polygon by area
+            coords = this.getLargestPolygonCoordinates(coordinates);
         } else {
             console.error('Unsupported geometry type:', type);
             return null;
@@ -418,12 +490,77 @@ export class Globe {
         ) || null;
     }
 
-    // Allow external components to listen for the countrySelected event
+    /**
+     * Allows external components to listen for events emitted by the Globe instance.
+     * @param {string} type - The type of event to listen for (e.g., 'countrySelected').
+     * @param {EventListenerOrEventListenerObject} listener - The callback function to execute when the event occurs.
+     */
     public addEventListener(type: string, listener: EventListenerOrEventListenerObject): void {
         this.eventTarget.addEventListener(type, listener);
     }
 
-    public removeEventListener(type: string, listener: EventListenerOrEventListenerObject): void {
-        this.eventTarget.removeEventListener(type, listener);
+    /**
+     * Finds a country in the GeoJSON data by its ISO 3166-1 alpha-2 country code.
+     * @param {string} countryCode - The two-letter country code to search for.
+     * @returns {object | null} The country feature object if found, or null if not found.
+     */
+    private findCountryByCode(countryCode: string): any | null {
+        return this.countriesGeoJson.features.find((feature: any) =>
+            feature.properties.iso_a2 === countryCode
+        ) || null;
+    }
+
+    /**
+     * Calculates the altitude of an arc based on the distance between two points.
+     * @param {number} distance - The distance between two points in kilometers.
+     * @returns {number} The calculated altitude for the arc.
+     */
+    private getArcAltitude(distance: number): number {
+        const minAltitude = 0.01;
+        const maxAltitude = 0.6;
+        const maxDistance = 20000; // maximum expected distance in km
+
+        return minAltitude + (maxAltitude - minAltitude) * Math.min(distance / maxDistance, 1);
+    }
+
+    /**
+     * Determines the stroke width of an arc based on the number of mentions.
+     * @param {number} mentions - The number of times a country is mentioned.
+     * @returns {number} The calculated stroke width for the arc.
+     */
+    private getArcStroke(mentions: number): number {
+        const minStroke = 0.05;
+        const maxStroke = 3;
+        const maxMentions = 50; // adjust based on your data
+
+        return minStroke + (maxStroke - minStroke) * Math.min(mentions / maxMentions, 1);
+    }
+
+    /**
+     * Calculates the great-circle distance between two points on the Earth's surface.
+     * @param {object} coords1 - The latitude and longitude of the first point.
+     * @param {object} coords2 - The latitude and longitude of the second point.
+     * @returns {number} The distance between the two points in kilometers.
+     */
+    private calculateDistance(coords1: { lat: number, lng: number }, coords2: { lat: number, lng: number }): number {
+        const R = 6371; // Earth's radius in km
+        const dLat = this.deg2rad(coords2.lat - coords1.lat);
+        const dLon = this.deg2rad(coords2.lng - coords1.lng);
+        const a =
+            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(this.deg2rad(coords1.lat)) * Math.cos(this.deg2rad(coords2.lat)) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2)
+        ;
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c; // Distance in km
+    }
+
+    /**
+     * Converts degrees to radians.
+     * @param {number} deg - The angle in degrees.
+     * @returns {number} The angle in radians.
+     */
+    private deg2rad(deg: number): number {
+        return deg * (Math.PI / 180);
     }
 }
