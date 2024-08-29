@@ -65,7 +65,7 @@
           />
         </div>
         <button
-            @click="applyCustomDateRange"
+            @click="applyCustomDateRange(); toggleCustomDatePicker()"
             class="w-full bg-blue-600 text-white px-3 py-1 rounded text-sm transition-colors duration-200 hover:bg-blue-700"
         >
           Apply
@@ -76,7 +76,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import {ref, computed, watch} from 'vue';
 import VueSlider from 'vue-slider-component';
 import 'vue-slider-component/theme/default.css';
 
@@ -90,9 +90,9 @@ const emit = defineEmits<{
 }>();
 
 const quickOptions = [
-  { label: '48h', value: '48h' },
-  { label: '4d', value: '4d' },
-  { label: '7d', value: '7d' },
+  {label: '48h', value: '48h'},
+  {label: '4d', value: '4d'},
+  {label: '7d', value: '7d'},
 ];
 
 const selectedQuickOption = ref('4d');
@@ -142,11 +142,11 @@ const updateDateRange = () => {
   startDate.setDate(startDate.getDate() + rangeStart.value);
   endDate.setDate(endDate.getDate() + rangeEnd.value);
 
-  return { startDate, endDate };
+  return {startDate, endDate};
 };
 
 const applyCustomDateRange = () => {
-  const { startDate, endDate } = updateDateRange();
+  const {startDate, endDate} = updateDateRange();
   emit('update-date-range', startDate.toISOString(), endDate.toISOString());
 };
 
