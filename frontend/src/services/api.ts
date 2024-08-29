@@ -1,6 +1,13 @@
 import axios from 'axios';
 
-export const fetchArticleCollections = async (startDate: string, endDate: string) => {
+/**
+ * Fetches article collections between the specified start and end dates.
+ *
+ * @param {string} startDate - The start date for the article collections in YYYY-MM-DD format.
+ * @param {string} endDate - The end date for the article collections in YYYY-MM-DD format.
+ * @returns {Promise<any[]>} A promise that resolves to an array of article collections. Returns an empty array if an error occurs.
+ */
+export const fetchArticleCollections = async (startDate: string, endDate: string): Promise<any[]> => {
     try {
         const response = await axios.get('/api/articles/collection', {
             params: {
@@ -15,8 +22,13 @@ export const fetchArticleCollections = async (startDate: string, endDate: string
     }
 };
 
-
-export const fetchArticles = async (urls: string[]) => {
+/**
+ * Fetches articles based on a list of URLs.
+ *
+ * @param {string[]} urls - An array of URLs for the articles to be fetched.
+ * @returns {Promise<any[]>} A promise that resolves to an array of articles. Returns an empty array if an error occurs or if the response format is unexpected.
+ */
+export const fetchArticles = async (urls: string[]): Promise<any[]> => {
     try {
         const response = await axios.post('/api/articles/batch', {urls});
         if (!Array.isArray(response.data)) {
@@ -28,4 +40,4 @@ export const fetchArticles = async (urls: string[]) => {
         console.error('Error fetching articles:', error);
         return [];
     }
-}
+};

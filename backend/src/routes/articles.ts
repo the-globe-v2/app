@@ -15,12 +15,12 @@ router.get('/collection', async (req, res) => {
         const startDate = new Date(start_date as string);
         const endDate = new Date(end_date as string);
 
-        // Check if the date range exceeds 7 days
+        // Check if the date range exceeds 8 days
         const diffInTime = endDate.getTime() - startDate.getTime();
         const diffInDays = diffInTime / (1000 * 3600 * 24);
 
-        if (diffInDays > 7) {
-            return res.status(400).json({error: 'Date range cannot exceed 7 days.'});
+        if (diffInDays > 8) {
+            return res.status(400).json({error: 'Date range cannot exceed 8 days.'});
         }
 
         const match: any = {
