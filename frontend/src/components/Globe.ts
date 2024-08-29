@@ -4,6 +4,8 @@ import ThreeGlobe from 'three-globe';
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls';
 import {point} from '@turf/helpers';
 import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
+import countriesGeoJson from '@/assets/countries.geojson?raw';
+
 
 export class Globe {
     private globe!: ThreeGlobe;
@@ -14,7 +16,7 @@ export class Globe {
     private readonly raycaster: THREE.Raycaster = new THREE.Raycaster();
     private readonly mouse: THREE.Vector2 = new THREE.Vector2();
     private readonly lastMousePosition: THREE.Vector2 = new THREE.Vector2();
-    private countriesGeoJson: any;
+    private countriesGeoJson: any = JSON.parse(countriesGeoJson);
     private currentlySelectedCountry: any = null;
     private isDragging = false;
     private eventTarget: EventTarget;
@@ -136,8 +138,11 @@ export class Globe {
      * @returns {Promise<void>} A promise that resolves when the globe is ready.
      */
     private async initialize(): Promise<void> {
-        // Preload the globe but don't add it to the scene yet
-        await this.loadGeoJsonData();
+        this.globe = this.createGlobe();
+        this.globe.showAtmosphere(true);
+        this.globe.atmosphereColor("rgb(240, 240, 240)");
+        this.globe.atmosphereAltitude(0.15);
+        this.scene.add(this.globe);
         this.addLights();
 
         // Hide the globe initially
@@ -150,26 +155,6 @@ export class Globe {
         }, 800); // Adjust delay as needed
     }
 
-    /**
-     * Fetches the GeoJSON data, initializes the globe with country polygons, and adds it to the scene.
-     *
-     * @returns {Promise<void>} A promise that resolves when the GeoJSON data is loaded.
-     */
-    private async loadGeoJsonData(): Promise<void> {
-        try {
-            const response = await fetch('/src/assets/countries.geojson');
-            if (!response.ok) console.error(`Failed to load GeoJSON: ${response.statusText}`);
-
-            this.countriesGeoJson = await response.json();
-            this.globe = this.createGlobe();
-            this.globe.showAtmosphere(true);
-            this.globe.atmosphereColor("rgb(240, 240, 240)");
-            this.globe.atmosphereAltitude(0.15);
-            this.scene.add(this.globe);
-        } catch (error) {
-            console.error('Error loading GeoJSON:', error);
-        }
-    }
 
     /**
      * Creates the ThreeGlobe instance and configures its visual properties.

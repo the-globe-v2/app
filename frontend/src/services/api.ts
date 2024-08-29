@@ -1,5 +1,7 @@
 import axios from 'axios';
 
+const API_URL = '/api';
+
 /**
  * Fetches article collections between the specified start and end dates.
  *
@@ -9,7 +11,7 @@ import axios from 'axios';
  */
 export const fetchArticleCollections = async (startDate: string, endDate: string): Promise<any[]> => {
     try {
-        const response = await axios.get('/api/articles/collection', {
+        const response = await axios.get(`${API_URL}/articles/collection`, {
             params: {
                 start_date: startDate,
                 end_date: endDate
@@ -30,7 +32,7 @@ export const fetchArticleCollections = async (startDate: string, endDate: string
  */
 export const fetchArticles = async (urls: string[]): Promise<any[]> => {
     try {
-        const response = await axios.post('/api/articles/batch', {urls});
+        const response = await axios.post(`${API_URL}/articles/batch`, {urls});
         if (!Array.isArray(response.data)) {
             console.error('Unexpected response format:', response.data);
             return [];

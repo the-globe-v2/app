@@ -59,7 +59,7 @@
             <!-- Article card content -->
             <div class="flex mb-3">
               <img
-                  :src="item?.image_url || '/src/assets/default-thumbnail.png'"
+                  :src="item?.image_url || defaultThumbnail"
                   alt="Article Thumbnail"
                   class="w-1/3 h-24 object-cover rounded-lg mr-4"
               >
@@ -111,10 +111,12 @@ div[class*="fixed"] {
 }
 </style>
 
-<script setup lang="ts">
+<script setup lang='ts'>
 import {ref, watch, onMounted} from 'vue';
-import {Article} from "../types/article";
-import {fetchArticleCollections, fetchArticles} from "../services/api";
+import {Article} from '../types/article';
+import {fetchArticleCollections, fetchArticles} from '../services/api';
+import earthFlag from '@/assets/planet-earth-flag.jpg'
+import defaultThumbnail from '@/assets/default-thumbnail.png'
 
 /**
  * ArticleSidePanel component
@@ -340,7 +342,7 @@ const formatDate = (dateString: Date): string => {
  */
 const getCountryFlag = (countryCode: string): string => {
   if (!countryCode) {
-    return '/src/assets/planet-earth-flag.jpg';
+    return earthFlag;
   }
   return `https://purecatamphetamine.github.io/country-flag-icons/3x2/${countryCode.toUpperCase()}.svg`;
 }

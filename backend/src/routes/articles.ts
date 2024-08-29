@@ -1,6 +1,6 @@
 import {Router} from 'express';
 import {ArticleModel} from '../database/models/article';
-import {ArticleCollectionModel} from "../database/models/articlecollection";
+import {ArticleCollectionModel} from "../database/models/articleCollection";
 
 const router = Router();
 

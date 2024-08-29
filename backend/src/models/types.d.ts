@@ -434,3 +434,13 @@ export type ISOLanguage =
     | 'za'
     | 'zh'
     | 'zu';
+
+export type Category =
+    'POLITICS'
+    | 'ECONOMY'
+    | 'TECHNOLOGY'
+    | 'SOCIETY'
+    | 'CULTURE'
+    | 'SPORTS'
+    | 'ENVIRONMENT'
+    | 'HEALTH';
