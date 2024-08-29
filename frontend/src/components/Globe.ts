@@ -28,6 +28,8 @@ export class Globe {
     private readonly selectedCountrySideColor = 'rgba(132,237,176,1)';
     private readonly initialCountryBorderColor = 'rgba(53,112,194, 0.1)';
     private readonly initialOceanColor = 'rgb(133,173,228)';
+    private readonly countryArcColor = 'rgba(30, 64, 175, 0.8)';
+    private readonly articleArcColor = 'rgba(59, 130, 246, 0.5)';
 
 
     /**
@@ -198,10 +200,12 @@ export class Globe {
      *
      * @param fromCountry - The ISO 3166-1 alpha-2 country code of the country being selected.
      * @param relatedCountries - A map of related country codes and the number of mentions.
+     * @param isArticle - Whether the arcs are for a country or just an article.
      */
-    public updateArcs(fromCountry: string, relatedCountries: Map<string, number>): void {
+    public updateArcs(fromCountry: string, relatedCountries: Map<string, number>, isArticle: boolean): void {
         // Clear previous arcs
         this.arcs = [];
+        console.log(isArticle)
 
         const fromCoords = this.getCountryCentroid(this.findCountryByCode(fromCountry));
         if (!fromCoords) return;
@@ -216,14 +220,14 @@ export class Globe {
                     endLat: toCoords.lat,
                     endLng: toCoords.lng,
                     altitude: this.getArcAltitude(distance),
-                    stroke: this.getArcStroke(mentions)
+                    stroke: isArticle ? 0.2 : this.getArcStroke(mentions)
                 });
             }
         });
 
         this.globe
             .arcsData(this.arcs)
-            .arcColor(() => 'rgba(255, 100, 50, 0.5)')
+            .arcColor(() => isArticle ? this.articleArcColor : this.countryArcColor)
             .arcAltitude('altitude')
             .arcStroke('stroke')
             .arcDashLength(0.9)
@@ -518,7 +522,7 @@ export class Globe {
     private getArcAltitude(distance: number): number {
         const minAltitude = 0.01;
         const maxAltitude = 0.6;
-        const maxDistance = 20000; // maximum expected distance in km
+        const maxDistance = 20000;
 
         return minAltitude + (maxAltitude - minAltitude) * Math.min(distance / maxDistance, 1);
     }
@@ -529,9 +533,9 @@ export class Globe {
      * @returns {number} The calculated stroke width for the arc.
      */
     private getArcStroke(mentions: number): number {
-        const minStroke = 0.05;
+        const minStroke = 0.1;
         const maxStroke = 3;
-        const maxMentions = 50; // adjust based on your data
+        const maxMentions = 50;
 
         return minStroke + (maxStroke - minStroke) * Math.min(mentions / maxMentions, 1);
     }

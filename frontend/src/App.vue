@@ -19,7 +19,9 @@
         :date-end="endDate"
         @close="handleSidePanelClose"
         @update-related-countries="updateRelatedCountries"
+        @article-selected="handleArticleSelection"
     />
+
   </div>
 </template>
 
@@ -43,6 +45,7 @@ let globeInstance: Globe | null = null;
 const isSidePanelOpen = ref(false);
 const selectedCountry = ref('');
 const selectedCountryCode = ref('');
+const selectedArticle = ref<any | null>(null);
 
 // Initialize with a default date range (last 4 days)
 const startDate = ref(new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString());
@@ -83,6 +86,19 @@ const handleSidePanelClose = () => {
 };
 
 /**
+ * Handles the selection of an article in the side panel
+ * @param {any} article - The selected article
+ */
+const handleArticleSelection = (article: any | null) => {
+  selectedArticle.value = article;
+  if (article) {
+    updateRelatedCountries(new Map(Object.entries(article.related_countries || {})));
+  } else {
+    updateRelatedCountries(new Map());
+  }
+};
+
+/**
  * Closes the side panel
  */
 const closeSidePanel = () => {
@@ -94,10 +110,11 @@ const closeSidePanel = () => {
 /**
  * Updates the related countries arcs on the globe visualization
  * @param {Map<string, number>} relatedCountries - A map of related countries and their counts
+ * @param {bool} isArticle - Whether the related countries are from an article or a whole origin country
  */
-const updateRelatedCountries = (relatedCountries: Map<string, number>) => {
+const updateRelatedCountries = (relatedCountries: Map<string, number>, isArticle: boolean) => {
   if (globeInstance && selectedCountryCode.value) {
-    globeInstance.updateArcs(selectedCountryCode.value, relatedCountries);
+    globeInstance.updateArcs(selectedCountryCode.value, relatedCountries, isArticle);
   }
 };
 

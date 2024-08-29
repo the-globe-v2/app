@@ -46,8 +46,15 @@
         </div>
         <!-- Article list -->
         <div v-else class="space-y-4">
-          <div v-for="(item, index) in trendingItems" :key="index"
-               class="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow p-4">
+          <div
+              v-for="(item, index) in loadedArticles"
+              :key="index"
+              @click="handleArticleClick(item)"
+              :class="[
+            'bg-white rounded-lg hover:shadow-md transition-shadow p-4 cursor-pointer',
+            selectedArticleUrl === item.url ? 'bg-gray-100 shadow-md' : 'shadow-sm'
+          ]"
+          >
             <!-- Article card content -->
             <div class="flex mb-3">
               <img
@@ -56,20 +63,26 @@
                   class="w-1/3 h-24 object-cover rounded-lg mr-4"
               >
               <div class="flex-grow flex flex-col justify-between">
-                <h3 class="text-lg font-semibold leading-tight">{{ truncateText(item?.title || 'No title', 75, true) }}</h3>
+                <h3 class="text-lg font-semibold leading-tight">{{
+                    truncateText(item?.title || 'No title', 75, true)
+                  }}</h3>
                 <div class="flex justify-between items-center text-xs">
                   <span class="text-gray-600">📰 {{ item?.provider || 'Unknown provider' }}</span>
                   <span class="text-gray-500">{{ formatDate(item?.date_published) }}</span>
                 </div>
               </div>
             </div>
-            <p class="text-sm text-gray-600 mb-2">{{ truncateText(item?.description || 'No description available', 200) }}</p>
+            <p class="text-sm text-gray-600 mb-2">{{
+                truncateText(item?.description || 'No description available', 200)
+              }}</p>
             <div class="flex justify-between items-center text-xs">
               <span class="text-blue-600">#{{ item?.category || 'Uncategorized' }}</span>
-              <a :href="item?.url" target="_blank" rel="noopener noreferrer"
-                 class="text-blue-600 hover:text-blue-800 font-medium">
-                Read More →
-              </a>
+              <span class="text-gray-500">{{ item?.related_countries.join(', ') }}</span> <a :href="item?.url"
+                                                                                             target="_blank"
+                                                                                             rel="noopener noreferrer"
+                                                                                             class="text-blue-600 hover:text-blue-800 font-medium">
+              Read More →
+            </a>
             </div>
           </div>
         </div>
@@ -98,8 +111,8 @@ div[class*="fixed"] {
 </style>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue';
-import { fetchArticleCollections, fetchArticles } from "../services/api";
+import {ref, watch, onMounted} from 'vue';
+import {fetchArticleCollections, fetchArticles} from "../services/api";
 
 /**
  * ArticleSidePanel component
@@ -120,16 +133,18 @@ const props = defineProps<{
 // Component emits
 const emit = defineEmits<{
   (e: 'close'): void
-  (e: 'update-related-countries', relatedCountries: Map<string, number>): void
+  (e: 'update-related-countries', relatedCountries: Map<string, number>, isArticle: boolean): void
+  (e: 'article-selected', articleUrl: string): void
 }>()
 
 // Component state
-const trendingItems = ref([])
+const loadedArticles = ref([])
 const loading = ref(false)
 const error = ref('')
 const message = ref('')
 const articleCollections = ref<any[]>([]);
 const articleCache = ref<Map<string, any>>(new Map()); // Cache articles to avoid re-fetching
+const selectedArticleUrl = ref<string | null>(null);
 
 /**
  * Fetches article collections for the given date range, updating the articleCollections state
@@ -173,7 +188,8 @@ const fetchArticlesForCountry = async () => {
     const urls = countryCollection.flatMap(collection => collection.article_urls);
 
     if (urls.length === 0) {
-      trendingItems.value = []; // Clear only if no articles found
+      loadedArticles.value = []; // Clear previous articles
+      emit('update-related-countries', new Map(), false); // Clear previous country arcs
       message.value = 'No articles found for this country in the selected date range.';
       return;
     }
@@ -191,23 +207,16 @@ const fetchArticlesForCountry = async () => {
 
     if (updatedArticles.length === 0) {
       message.value = 'No articles found for this country in the selected date range.';
+      // Clear previous country arcs
+      emit('update-related-countries', new Map(), false);
     } else {
-      trendingItems.value = updatedArticles;
+      loadedArticles.value = updatedArticles;
 
       // Create a Map to store related countries and their mention count
-      const relatedCountriesMap = new Map<string, number>();
-
-      updatedArticles.forEach(article => {
-        if (Array.isArray(article.related_countries)) {
-          article.related_countries.forEach(country => {
-            const count = relatedCountriesMap.get(country) || 0;
-            relatedCountriesMap.set(country, count + 1);
-          });
-        }
-      });
+      const relatedCountriesMap = processRelatedCountries(updatedArticles);
 
       // Emit the related countries data
-      emit('update-related-countries', relatedCountriesMap);
+      emit('update-related-countries', relatedCountriesMap, false);
     }
   } catch (err) {
     console.error('Error fetching articles:', err);
@@ -249,6 +258,31 @@ const updateArticles = async () => {
   await fetchCollections();
   if (props.countryCode) {
     await fetchArticlesForCountry();
+  }
+};
+
+/**
+ * Handles the click event on an article card, emitting all countries related to the article
+ * If the same article is clicked, deselect it and reset the related countries to the country
+ *
+ * @param {any} article - The clicked article
+ */
+const handleArticleClick = (article: any) => {
+  if (selectedArticleUrl.value === article.url) {
+    // Deselect if clicking the same article
+    selectedArticleUrl.value = null;
+    emit('article-selected', null);
+    // Reset the related countries to the selected country
+    emit('update-related-countries', processRelatedCountries(loadedArticles.value), false);
+  } else {
+    selectedArticleUrl.value = article.url;
+    emit('article-selected', article);
+    if (article.related_countries) {
+      const relatedCountriesMap = processRelatedCountries([article]);
+      emit('update-related-countries', relatedCountriesMap, true);
+    } else {
+      emit('update-related-countries', new Map(), true);
+    }
   }
 };
 
