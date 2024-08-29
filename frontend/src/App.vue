@@ -1,5 +1,5 @@
 <template>
-  <div id="app" class="relative w-full h-screen overflow-hidden">
+  <div id="app" class="relative w-full h-screen overflow-hidden font-outfit">
     <!-- Starry background -->
     <div class="starry-background absolute inset-0 z-0">
       <!-- Stars will be added here dynamically -->
@@ -8,7 +8,11 @@
     <!-- Globe container -->
     <div id="globe-container" class="absolute inset-0 z-10"></div>
 
-    <!-- Your existing components -->
+    <CountrySelector
+        @country-selected="handleCountrySelection"
+        class="z-20"
+    />
+
     <DateRangeSelector
         :start-date="startDate"
         :end-date="endDate"
@@ -33,6 +37,7 @@
 <script setup lang="ts">
 import {ref, onMounted} from 'vue';
 import {Globe} from './components/Globe';
+import CountrySelector from './components/CountrySelector.vue';
 import ArticleSidePanel from './components/ArticleSidePanel.vue';
 import DateRangeSelector from './components/DateRangeSelector.vue';
 
@@ -75,6 +80,20 @@ const openSidePanel = (country: string, cc: string) => {
   selectedCountry.value = country;
   selectedCountryCode.value = cc;
   isSidePanelOpen.value = true;
+};
+
+/**
+ * Handles the selection of a country on the globe visualization
+ *
+ * @param countryCode
+ */
+const handleCountrySelection = (countryCode: string) => {
+  if (globeInstance) {
+    const country = globeInstance.findCountryByCode(countryCode);
+    if (country) {
+      globeInstance.selectCountry(country);
+    }
+  }
 };
 
 
@@ -149,6 +168,15 @@ onMounted(() => {
   pointer-events: none;
 }
 
+.star {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background-color: white;
+  border-radius: 50%;
+  opacity: 0;
+  animation: twinkle linear infinite;
+}
 
 @keyframes twinkle {
   0% {
