@@ -23,7 +23,7 @@ export class Globe {
     private readonly initialCountryAltitude = 0.009;
     private readonly selectedCountryAltitude = 0.02;
     private readonly initialCountryColor = 'rgba(194,195,205, 1)';
-    private readonly selectedCountryColor = 'rgba(87,111,148,0.9)';
+    private readonly selectedCountryColor = 'rgba(162,187,228,0.9)';
     private readonly initialCountrySideColor = 'rgba(240, 240, 240, 0)';
     private readonly selectedCountrySideColor = 'rgb(43,88,149)';
     private readonly initialCountryBorderColor = 'rgba(91,103,120,0.15)';
@@ -312,7 +312,6 @@ export class Globe {
                 this.deselectCountry();
             } else if (clickedCountry) {
                 this.selectCountry(clickedCountry);
-                this.centerCameraOnCountry(clickedCountry);
             }
         }
     }
@@ -320,8 +319,9 @@ export class Globe {
     /**
      * Selects a country, updating the globe's appearance to highlight it.
      */
-    private selectCountry(country: any): void {
+    public selectCountry(country: any): void {
         this.currentlySelectedCountry = country;
+        this.centerCameraOnCountry(country);
         gsap.to(this.globe, {
             duration: 0.1,
             onUpdate: () => {
@@ -338,7 +338,7 @@ export class Globe {
     /**
      * Deselects the currently selected country, resetting the globe's appearance.
      */
-    private deselectCountry(): void {
+    public deselectCountry(): void {
         this.currentlySelectedCountry = null;
         this.clearArcs();
         gsap.to(this.globe, {
@@ -386,7 +386,7 @@ export class Globe {
         const {lat, lng} = centroid;
 
         // Offset the latitude by a few degrees to move the camera south
-        const offsetLat = lat - 5;
+        const offsetLat = lat - 10;
 
         // Convert the adjusted lat/lng to Cartesian coordinates
         const targetPosition = this.globe.getCoords(offsetLat, lng);
@@ -398,7 +398,7 @@ export class Globe {
         const direction = targetVector.clone().normalize();
 
         // Set the desired distance from the country to zoom in closer
-        const desiredDistance = 150; // Adjust this to control zoom level
+        const desiredDistance = 200; // Adjust this to control zoom level
 
         // Calculate the new camera position by moving along the direction vector
         const newCamPosition = direction.multiplyScalar(desiredDistance);
@@ -499,6 +499,7 @@ export class Globe {
 
     /**
      * Allows external components to listen for events emitted by the Globe instance.
+     *
      * @param {string} type - The type of event to listen for (e.g., 'countrySelected').
      * @param {EventListenerOrEventListenerObject} listener - The callback function to execute when the event occurs.
      */
@@ -508,10 +509,11 @@ export class Globe {
 
     /**
      * Finds a country in the GeoJSON data by its ISO 3166-1 alpha-2 country code.
+     *
      * @param {string} countryCode - The two-letter country code to search for.
      * @returns {object | null} The country feature object if found, or null if not found.
      */
-    private findCountryByCode(countryCode: string): any | null {
+    public findCountryByCode(countryCode: string): any | null {
         return this.countriesGeoJson.features.find((feature: any) =>
             feature.properties.iso_a2 === countryCode
         ) || null;
@@ -519,6 +521,7 @@ export class Globe {
 
     /**
      * Calculates the altitude of an arc based on the distance between two points.
+     *
      * @param {number} distance - The distance between two points in kilometers.
      * @returns {number} The calculated altitude for the arc.
      */
@@ -532,6 +535,7 @@ export class Globe {
 
     /**
      * Determines the stroke width of an arc based on the number of mentions.
+     *
      * @param {number} mentions - The number of times a country is mentioned.
      * @returns {number} The calculated stroke width for the arc.
      */
@@ -545,6 +549,7 @@ export class Globe {
 
     /**
      * Calculates the great-circle distance between two points on the Earth's surface.
+     *
      * @param {object} coords1 - The latitude and longitude of the first point.
      * @param {object} coords2 - The latitude and longitude of the second point.
      * @returns {number} The distance between the two points in kilometers.
@@ -564,6 +569,7 @@ export class Globe {
 
     /**
      * Converts degrees to radians.
+     *
      * @param {number} deg - The angle in degrees.
      * @returns {number} The angle in radians.
      */
