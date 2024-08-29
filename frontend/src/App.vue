@@ -9,8 +9,9 @@
         :end-date="endDate"
         @update-date-range="updateDateRange"
     />
-
+    
     <!-- Article side panel component -->
+
     <ArticleSidePanel
         :is-open="isSidePanelOpen"
         :country="selectedCountry"
@@ -36,6 +37,7 @@ import DateRangeSelector from './components/DateRangeSelector.vue';
  */
 
 // Reactive state
+
 const isSidePanelOpen = ref(false);
 const selectedCountry = ref('');
 const selectedCountryCode = ref('');
