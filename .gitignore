@@ -1,3 +1,5 @@
+.idea
+.env
 .aidigestignore
 codebase.md
 node_modules
