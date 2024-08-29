@@ -338,7 +338,7 @@ export class Globe {
     /**
      * Deselects the currently selected country, resetting the globe's appearance.
      */
-    private deselectCountry(): void {
+    public deselectCountry(): void {
         this.currentlySelectedCountry = null;
         this.clearArcs();
         gsap.to(this.globe, {

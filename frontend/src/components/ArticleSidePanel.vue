@@ -31,7 +31,8 @@
         </button>
       </div>
       <!-- Main content area -->
-      <div class="p-4 overflow-y-auto flex-grow bg-gray-50 bg-opacity-10 backdrop-filter backdrop-blur-lg hide-scrollbar">
+      <div
+          class="p-4 overflow-y-auto flex-grow bg-gray-50 bg-opacity-10 backdrop-filter backdrop-blur-lg hide-scrollbar">
         <!-- Loading spinner -->
         <div v-if="loading" class="flex justify-center items-center h-full">
           <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
@@ -112,6 +113,7 @@ div[class*="fixed"] {
 
 <script setup lang="ts">
 import {ref, watch, onMounted} from 'vue';
+import {Article} from "../types/article";
 import {fetchArticleCollections, fetchArticles} from "../services/api";
 
 /**
@@ -138,7 +140,7 @@ const emit = defineEmits<{
 }>()
 
 // Component state
-const loadedArticles = ref([])
+const loadedArticles = ref<Article[]>([]);
 const loading = ref(false)
 const error = ref('')
 const message = ref('')
@@ -190,7 +192,7 @@ const fetchArticlesForCountry = async () => {
     if (urls.length === 0) {
       loadedArticles.value = []; // Clear previous articles
       emit('update-related-countries', new Map(), false); // Clear previous country arcs
-      message.value = 'No articles found for this country in the selected date range.';
+      message.value = 'No articles found for in the selected date range. This country may not be supported yet.';
       return;
     }
 
@@ -206,7 +208,7 @@ const fetchArticlesForCountry = async () => {
     const updatedArticles = [...cachedArticles, ...newArticles];
 
     if (updatedArticles.length === 0) {
-      message.value = 'No articles found for this country in the selected date range.';
+      message.value = 'No articles found for this country. Please expand date range.';
       // Clear previous country arcs
       emit('update-related-countries', new Map(), false);
     } else {
@@ -271,7 +273,7 @@ const handleArticleClick = (article: any) => {
   if (selectedArticleUrl.value === article.url) {
     // Deselect if clicking the same article
     selectedArticleUrl.value = null;
-    emit('article-selected', null);
+    emit('article-selected', '');
     // Reset the related countries to the selected country
     emit('update-related-countries', processRelatedCountries(loadedArticles.value), false);
   } else {
@@ -325,7 +327,7 @@ const truncateText = (text: string, limit: number = 200, title: boolean = false)
  * @param {string} dateString - The date string to format
  * @returns {string} - The formatted date string
  */
-const formatDate = (dateString: string): string => {
+const formatDate = (dateString: Date): string => {
   const date = new Date(dateString);
   return date.toLocaleDateString('en-US', {month: 'short', day: 'numeric'});
 }
