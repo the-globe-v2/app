@@ -1,11 +1,11 @@
 <template>
   <div
-      class="fixed bottom-4 left-4 z-50 bg-white rounded-lg shadow-md p-4"
+      class="fixed bottom-4 left-4 z-50 bg-white bg-opacity-40 backdrop-filter backdrop-blur-lg rounded-lg shadow-lg p-4"
       @click.stop
       @mousedown.stop
       @touchstart.stop
   >
-    <div class="flex items-center justify-center space-x-4 mb-4">
+    <div class="flex items-center justify-center space-x-4 mb">
       <button
           v-for="option in quickOptions"
           :key="option.value"
@@ -14,7 +14,7 @@
           'px-3 py-1 text-sm font-medium rounded-full transition-colors duration-200',
           selectedQuickOption === option.value
             ? 'bg-blue-600 text-white'
-            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            : 'bg-gray-200 bg-opacity-60 text-gray-800 hover:bg-gray-300 hover:bg-opacity-70'
         ]"
       >
         {{ option.label }}
@@ -25,7 +25,7 @@
           'px-3 py-1 text-sm font-medium rounded-full transition-colors duration-200',
           showCustomDatePicker
             ? 'bg-blue-600 text-white'
-            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            : 'bg-gray-200 bg-opacity-60 text-gray-800 hover:bg-gray-300 hover:bg-opacity-70'
         ]"
       >
         Custom
@@ -39,16 +39,16 @@
         leave-from-class="opacity-100 max-h-[300px]"
         leave-to-class="opacity-0 max-h-0"
     >
-      <div v-if="showCustomDatePicker" class="space-y-4 overflow-hidden">
+      <div v-if="showCustomDatePicker" class="bg-white bg-opacity-50 rounded-md space-y-4 overflow-hidden p-3 mt-4">
         <div class="flex items-center space-x-2 mx-2">
-          <span class="text-sm text-gray-600">Date:</span>
+          <span class="text-md font-semibold text-gray-800">Date:</span>
           <input
               type="date"
               v-model="selectedDate"
-              class="border rounded px-2 py-1 text-sm"
+              class="border border-gray-300 bg-white bg-opacity-80 backdrop-filter backdrop-blur-lg rounded px-2 py-1 text-sm shadow-sm text-gray-900"
           >
         </div>
-        <div class="space-y-2">
+        <div class="space-y-2 px-2">
           <vue-slider
               v-model="rangeValue"
               :min="-4"
@@ -60,13 +60,14 @@
               :tooltip="'always'"
               :dot-size="14"
               :height="8"
+
               @change="updateDateRange"
-              class="mt-10 mx-4"
+              class="mt-10"
           />
         </div>
         <button
             @click="applyCustomDateRange(); toggleCustomDatePicker()"
-            class="w-full bg-blue-600 text-white px-3 py-1 rounded text-sm transition-colors duration-200 hover:bg-blue-700"
+            class="w-full bg-blue-600 text-white px-3 py-1 rounded text-sm transition-colors duration-200 hover:bg-blue-700 shadow-lg"
         >
           Apply
         </button>
@@ -98,7 +99,7 @@ const quickOptions = [
 const selectedQuickOption = ref('4d');
 const showCustomDatePicker = ref(false);
 const selectedDate = ref(new Date().toISOString().split('T')[0]);
-const rangeValue = ref([0, 0]);
+const rangeValue = ref([-2, 2]);
 
 const rangeStart = computed(() => rangeValue.value[0]);
 const rangeEnd = computed(() => rangeValue.value[1]);
@@ -108,7 +109,7 @@ const toggleCustomDatePicker = () => {
   if (showCustomDatePicker.value) {
     selectedQuickOption.value = '';
     selectedDate.value = new Date().toISOString().split('T')[0];
-    rangeValue.value = [0, 0];
+    rangeValue.value = [-2, 2];
   }
 };
 

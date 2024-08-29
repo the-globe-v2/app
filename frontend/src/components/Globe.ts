@@ -22,14 +22,14 @@ export class Globe {
 
     private readonly initialCountryAltitude = 0.009;
     private readonly selectedCountryAltitude = 0.02;
-    private readonly initialCountryColor = 'rgba(240,240,240, 0.9)';
-    private readonly selectedCountryColor = 'rgba(46,204,113, 0.8)';
+    private readonly initialCountryColor = 'rgba(194,195,205, 1)';
+    private readonly selectedCountryColor = 'rgba(87,111,148,0.9)';
     private readonly initialCountrySideColor = 'rgba(240, 240, 240, 0)';
-    private readonly selectedCountrySideColor = 'rgba(132,237,176,1)';
-    private readonly initialCountryBorderColor = 'rgba(53,112,194, 0.1)';
-    private readonly initialOceanColor = 'rgb(133,173,228)';
-    private readonly countryArcColor = 'rgba(30, 64, 175, 0.8)';
-    private readonly articleArcColor = 'rgba(59, 130, 246, 0.5)';
+    private readonly selectedCountrySideColor = 'rgb(43,88,149)';
+    private readonly initialCountryBorderColor = 'rgba(91,103,120,0.15)';
+    private readonly initialOceanColor = 'rgb(1,48,108)';
+    private readonly countryArcColor = 'rgba(240,240,240, 0.8)';
+    private readonly articleArcColor = 'rgba(240,240,240, 0.5)';
 
 
     /**
@@ -46,10 +46,9 @@ export class Globe {
 
         container.appendChild(this.renderer.domElement);
         this.initialize().catch(console.error);
+        this.animateCameraZoomIn();
         this.addEventListeners();
         this.animate();
-
-        this.animateCameraZoomIn(); // Start the zoom-in animation
     }
 
     /**
@@ -68,14 +67,16 @@ export class Globe {
         const {clientWidth, clientHeight} = this.container;
         const camera = new THREE.PerspectiveCamera(75, clientWidth / clientHeight, 0.1, 1000);
 
-        // Start the camera far away
+        // Start the camera far away and slightly above the globe
         camera.position.z = 10000;
+        camera.position.y = 2500;
         return camera;
     }
 
     private animateCameraZoomIn(): void {
         // Define the target position for the camera
-        const targetZ = 250;
+        const targetZ = 200;
+        this.controls.enabled = false;
 
         // Animate the camera's z-position to the target position
         gsap.to(this.camera.position, {
@@ -87,7 +88,8 @@ export class Globe {
                 this.camera.lookAt(new THREE.Vector3(0, 0, 0));
             },
             onComplete: () => {
-                // Ensure controls are correctly updated after the animation
+                // Ensure controls are enabled and correctly updated after the animation
+                this.controls.enabled = true;
                 this.controls.update();
             }
         });
@@ -145,7 +147,6 @@ export class Globe {
         setTimeout(() => {
             // Show the globe and start the animation
             this.renderer.domElement.style.visibility = 'visible';
-            this.animateCameraZoomIn();
         }, 800); // Adjust delay as needed
     }
 
@@ -157,13 +158,13 @@ export class Globe {
     private async loadGeoJsonData(): Promise<void> {
         try {
             const response = await fetch('/src/assets/countries.geojson');
-            if (!response.ok) throw new Error(`Failed to load GeoJSON: ${response.statusText}`);
+            if (!response.ok) console.error(`Failed to load GeoJSON: ${response.statusText}`);
 
             this.countriesGeoJson = await response.json();
             this.globe = this.createGlobe();
             this.globe.showAtmosphere(true);
             this.globe.atmosphereColor("rgb(240, 240, 240)");
-            this.globe.atmosphereAltitude(0.3);
+            this.globe.atmosphereAltitude(0.15);
             this.scene.add(this.globe);
         } catch (error) {
             console.error('Error loading GeoJSON:', error);
@@ -205,7 +206,6 @@ export class Globe {
     public updateArcs(fromCountry: string, relatedCountries: Map<string, number>, isArticle: boolean): void {
         // Clear previous arcs
         this.arcs = [];
-        console.log(isArticle)
 
         const fromCoords = this.getCountryCentroid(this.findCountryByCode(fromCountry));
         if (!fromCoords) return;
@@ -385,8 +385,11 @@ export class Globe {
 
         const {lat, lng} = centroid;
 
-        // Convert the lat/lng to Cartesian coordinates
-        const targetPosition = this.globe.getCoords(lat, lng);
+        // Offset the latitude by a few degrees to move the camera south
+        const offsetLat = lat - 5;
+
+        // Convert the adjusted lat/lng to Cartesian coordinates
+        const targetPosition = this.globe.getCoords(offsetLat, lng);
 
         // Create a vector for the target position
         const targetVector = new THREE.Vector3(targetPosition.x, targetPosition.y, targetPosition.z);
@@ -534,7 +537,7 @@ export class Globe {
      */
     private getArcStroke(mentions: number): number {
         const minStroke = 0.1;
-        const maxStroke = 3;
+        const maxStroke = 2.3;
         const maxMentions = 50;
 
         return minStroke + (maxStroke - minStroke) * Math.min(mentions / maxMentions, 1);

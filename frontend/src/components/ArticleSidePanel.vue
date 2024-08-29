@@ -1,7 +1,7 @@
 <template>
   <!-- ArticleSidePanel component template -->
   <div
-      class="fixed right-4 top-4 bottom-4 w-full max-w-md bg-white shadow-lg rounded-2xl overflow-hidden transition-transform duration-300 ease-in-out transform z-50"
+      class="fixed right-4 top-4 bottom-4 w-full max-w-md bg-white shadow-lg rounded-2xl overflow-hidden transition-transform duration-300 ease-in-out transform z-50 backdrop-filter backdrop-blur-lg bg-opacity-30"
       :class="{ 'translate-x-0': isOpen, 'translate-x-[120%]': !isOpen }"
       @click.stop
       @mousedown.stop
@@ -10,7 +10,7 @@
     <!-- Panel content -->
     <div class="h-full flex flex-col">
       <!-- Header -->
-      <div class="p-4 bg-gradient-to-r from-blue-600 to-blue-400 text-white flex items-center justify-between">
+      <div class="p-4 bg-white opacity-90 text-gray-800 flex items-center justify-between">
         <!-- Country flag and name -->
         <div class="flex items-center">
           <img
@@ -23,7 +23,7 @@
         <!-- Close button -->
         <button
             @click="$emit('close')"
-            class="text-white hover:text-gray-200 transition-colors"
+            class="text-gray-800 hover:text-red-700 transition-colors"
         >
           <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -31,17 +31,17 @@
         </button>
       </div>
       <!-- Main content area -->
-      <div class="p-4 overflow-y-auto flex-grow bg-gray-50 hide-scrollbar">
+      <div class="p-4 overflow-y-auto flex-grow bg-gray-50 bg-opacity-10 backdrop-filter backdrop-blur-lg hide-scrollbar">
         <!-- Loading spinner -->
         <div v-if="loading" class="flex justify-center items-center h-full">
           <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
         </div>
         <!-- Error message -->
-        <div v-else-if="error" class="text-red-500 text-center">
+        <div v-else-if="error" class="font-semibold text-red-600 pt-10 ext-center">
           {{ error }}
         </div>
         <!-- Informational message -->
-        <div v-else-if="message" class="text-gray-500 text-center">
+        <div v-else-if="message" class="font-semibold text-gray-800 pt-10 text-center">
           {{ message }}
         </div>
         <!-- Article list -->
@@ -51,8 +51,8 @@
               :key="index"
               @click="handleArticleClick(item)"
               :class="[
-            'bg-white rounded-lg hover:shadow-md transition-shadow p-4 cursor-pointer',
-            selectedArticleUrl === item.url ? 'bg-gray-100 shadow-md' : 'shadow-sm'
+            'bg-white rounded-lg hover:shadow-md transition-shadow p-4 cursor-pointer backdrop-filter backdrop-blur-lg',
+            selectedArticleUrl === item.url ? 'bg-opacity-90 shadow-md' : 'bg-opacity-50 shadow-sm'
           ]"
           >
             <!-- Article card content -->

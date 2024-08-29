@@ -1,16 +1,21 @@
 <template>
-  <div id="app" class="relative">
-    <!-- Globe container -->
-    <div id="globe-container" class="w-full h-screen"></div>
+  <div id="app" class="relative w-full h-screen overflow-hidden">
+    <!-- Starry background -->
+    <div class="starry-background absolute inset-0 z-0">
+      <!-- Stars will be added here dynamically -->
+    </div>
 
-    <!-- Date range selector component -->
+    <!-- Globe container -->
+    <div id="globe-container" class="absolute inset-0 z-10"></div>
+
+    <!-- Your existing components -->
     <DateRangeSelector
         :start-date="startDate"
         :end-date="endDate"
         @update-date-range="updateDateRange"
+        class="z-20"
     />
 
-    <!-- Article side panel component -->
     <ArticleSidePanel
         :is-open="isSidePanelOpen"
         :country="selectedCountry"
@@ -19,9 +24,8 @@
         :date-end="endDate"
         @close="handleSidePanelClose"
         @update-related-countries="updateRelatedCountries"
-        @article-selected="handleArticleSelection"
+        class="z-20"
     />
-
   </div>
 </template>
 
@@ -118,8 +122,22 @@ const updateRelatedCountries = (relatedCountries: Map<string, number>, isArticle
   }
 };
 
+const createStars = () => {
+  const starryBackground = document.querySelector('.starry-background');
+  for (let i = 0; i < 100; i++) {
+    const star = document.createElement('div');
+    star.className = 'star';
+    star.style.top = `${Math.random() * 100}%`;
+    star.style.left = `${Math.random() * 100}%`;
+    star.style.animationDuration = `${Math.random() * 5 + 5}s`;
+    star.style.animationDelay = `${Math.random() + 1}s`;
+    starryBackground?.appendChild(star);
+  }
+};
+
 // Lifecycle hooks
 onMounted(() => {
+  createStars();
   const container = document.getElementById('globe-container');
   if (container) {
     globeInstance = new Globe(container);
@@ -132,3 +150,31 @@ onMounted(() => {
   }
 });
 </script>
+
+<style>
+#app {
+  background: transparent;
+}
+
+.starry-background {
+  background: linear-gradient(135deg, rgb(36, 67, 110) 0%, rgba(0, 0, 0, 1) 100%);
+
+  pointer-events: none;
+}
+
+
+@keyframes twinkle {
+  0% {
+    opacity: 0;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+}
+</style>
