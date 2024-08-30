@@ -5,11 +5,11 @@ on:
     types:
       - closed
     branches:
-      - master
+      - main
 
 jobs:
   build-push-and-release:
-    if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'master' && github.event.pull_request.head.ref == 'dev'
+    if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main' && github.event.pull_request.head.ref == 'dev'
     runs-on: ubuntu-latest
 
     steps:
