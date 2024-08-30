@@ -69,3 +69,4 @@ jobs:
             - Backend: ghcr.io/${{ github.repository }}/backend:${{ github.sha }}
           draft: false
           prerelease: false
+
