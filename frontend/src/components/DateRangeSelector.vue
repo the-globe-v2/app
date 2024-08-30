@@ -78,8 +78,7 @@
 
 <script setup lang="ts">
 import {ref, computed, watch} from 'vue';
-import VueSlider from 'vue-slider-component';
-import 'vue-slider-component/theme/default.css';
+import VueSlider from 'vue-3-slider-component';
 
 const props = defineProps<{
   startDate: string;

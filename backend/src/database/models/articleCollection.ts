@@ -1,5 +1,5 @@
 import mongoose, {Schema} from "mongoose";
-import {ArticleCollection} from "../../models/articlecollection";
+import {ArticleCollection} from "../../models/articleCollection";
 
 const articleCollectionSchema = new Schema<ArticleCollection>({
     date: {type: String, required: true},

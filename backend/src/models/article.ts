@@ -1,15 +1,6 @@
 import { Document } from 'mongoose';
-import { CountryAlpha2, ISOLanguage} from "./types";
+import { CountryAlpha2, ISOLanguage, Category} from "./types";
 
-export type Category =
-    'POLITICS'
-    | 'ECONOMY'
-    | 'TECHNOLOGY'
-    | 'SOCIETY'
-    | 'CULTURE'
-    | 'SPORTS'
-    | 'ENVIRONMENT'
-    | 'HEALTH';
 
 export interface Article extends Document {
     title: string;

@@ -6,7 +6,7 @@
       <!-- Header section with logo and title -->
       <div
           class="flex w-full items-center justify-between bg-white bg-opacity-60 backdrop-filter backdrop-blur-lg rounded-lg shadow-lg p-2">
-        <img src="../assets/globe-logo.png" alt="The Globe Logo" class="w-10 h-10">
+        <img :src="globeLogo" alt="The Globe Logo" class="w-10 h-10">
         <span
             class="font-extrabold text-3xl text-transparent bg-clip-text bg-gradient-to-tl to-gray-400 from-sky-950 pr-8">The Globe</span>
       </div>
@@ -74,7 +74,11 @@
 
 <script setup lang="ts">
 import {ref, computed} from 'vue';
-import countryList from '../assets/supportedCountries.json';
+import countryListRaw from '@/assets/supportedCountries.json?raw';
+
+const countryList: { [key: string]: string } = JSON.parse(countryListRaw);
+import globeLogo from '@/assets/globe-logo.png';
+
 
 const showCountryList = ref(false); // Boolean to show/hide the country list
 const searchQuery = ref(''); // User's search query for filtering countries
