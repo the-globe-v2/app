@@ -1,4 +1,4 @@
-import express, {Request, Response, NextFunction} from 'express';
+import express, {Request, Response} from 'express';
 import config from './config';
 import {connectToDatabase} from './database/connection';
 import articleRoutes from './routes/articles';
