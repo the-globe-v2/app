@@ -31,7 +31,7 @@ describe('ArticleSidePanel', () => {
     });
 
     it('emits close event when close button is clicked', async () => {
-        await wrapper.find('button').trigger('click');
+        await wrapper.find('#close-panel-btn').trigger('click');
         expect(wrapper.emitted('close')).toBeTruthy();
     });
 
@@ -116,6 +116,41 @@ describe('ArticleSidePanel', () => {
 
         expect(wrapper.find('.text-gray-800.text-center.pt-10').text()).toBe('No articles found for in the selected date range.');
 
+    });
+
+
+    it('toggles expanded state when expand button is clicked', async () => {
+        const expandButton = wrapper.find('#expand-panel-btn');
+        expect(wrapper.vm.isExpanded).toBe(false);
+
+        await expandButton.trigger('click');
+        expect(wrapper.vm.isExpanded).toBe(true);
+
+        await expandButton.trigger('click');
+        expect(wrapper.vm.isExpanded).toBe(false);
+    });
+
+    it('applies grid layout class when expanded', async () => {
+        await wrapper.vm.toggleExpand();
+        await wrapper.vm.$nextTick();
+        expect(wrapper.find('.grid').exists()).toBe(true);
+    });
+
+    it('does not apply grid layout class when not expanded', () => {
+        expect(wrapper.find('.grid').exists()).toBe(false);
+    });
+
+    it('updates panel width when toggling expand', async () => {
+        const initialWidth = wrapper.vm.panelWidth;
+        await wrapper.vm.toggleExpand();
+        expect(wrapper.vm.panelWidth).not.toBe(initialWidth);
+    });
+
+    it('resets expanded state when closing panel', async () => {
+        await wrapper.vm.toggleExpand();
+        wrapper.vm.closePanel();
+        expect(wrapper.vm.isExpanded).toBe(false);
+        expect(wrapper.emitted('close')).toBeTruthy();
     });
 
     it('truncates text correctly', () => {

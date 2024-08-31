@@ -1,11 +1,12 @@
 {
   "name": "the-globe-app",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "workspaces": [
     "frontend",
     "backend"
   ],
+  "author": "Santiago Martinez-Avial",
   "scripts": {
     "dev": "concurrently \"npm run dev --prefix frontend\" \"npm run dev --prefix backend\"",
     "build": "npm run build --prefix frontend && npm run build --prefix backend",
@@ -15,7 +16,11 @@
     "test": "npm run test:frontend && npm run test:backend",
     "coverage:frontend": "vitest run --config frontend/vite.config.mts --coverage",
     "coverage:backend": "vitest run --config backend/vitest.config.mts --coverage",
-    "coverage": "npm run coverage:frontend && npm run coverage:backend"
+    "coverage": "npm run coverage:frontend && npm run coverage:backend",
+    "typecheck:frontend": "vue-tsc --noEmit -p frontend/tsconfig.json",
+    "typecheck:backend": "tsc --noEmit -p backend/tsconfig.json",
+    "typecheck": "npm run typecheck:frontend && npm run typecheck:backend",
+    "preflight": "npm run typecheck && npm run build"
   },
   "devDependencies": {
     "@testing-library/vue": "^8.1.0",
@@ -26,8 +31,5 @@
     "jsdom": "^25.0.0",
     "supertest": "^7.0.0",
     "vitest": "^2.0.5"
-  },
-  "dependencies": {
-    "vue-slider-component": "^4.1.0-beta.7"
   }
 }
