@@ -3,3 +3,4 @@
 .aidigestignore
 codebase.md
 node_modules
+*coverage
