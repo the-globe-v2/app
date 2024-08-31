@@ -13,6 +13,7 @@
 
       <!-- Button to toggle the country list, with rotating icon -->
       <button
+          id="toggle-country-list"
           @click="toggleCountryList"
           class="mt-0.5 px-14"
       >
@@ -54,7 +55,7 @@
         >
 
         <!-- List of filtered countries -->
-        <div class="max-h-96 overflow-y-auto hide-scrollbar">
+        <div id="country-list" class="max-h-96 overflow-y-auto hide-scrollbar">
           <button
               v-for="[code, name] in filteredCountries"
               :key="code"

@@ -47,43 +47,49 @@
         </div>
         <!-- Article list -->
         <div v-else class="space-y-4">
-          <div
-              v-for="(item, index) in loadedArticles"
-              :key="index"
-              @click="handleArticleClick(item)"
-              :class="[
+          <div v-if="loadedArticles.length === 0" class="text-gray-800 text-center pt-10">
+            No articles found for in the selected date range.
+          </div>
+          <div v-else>
+            <div
+                v-for="(item, index) in loadedArticles"
+                :key="index"
+                @click="handleArticleClick(item)"
+                :class="[
             'bg-white rounded-lg hover:shadow-md transition-shadow p-4 cursor-pointer backdrop-filter backdrop-blur-lg',
             selectedArticleUrl === item.url ? 'bg-opacity-90 shadow-md' : 'bg-opacity-50 shadow-sm'
           ]"
-          >
-            <!-- Article card content -->
-            <div class="flex mb-3">
-              <img
-                  :src="item?.image_url || defaultThumbnail"
-                  alt="Article Thumbnail"
-                  class="w-1/3 h-24 object-cover rounded-lg mr-4"
-              >
-              <div class="flex-grow flex flex-col justify-between">
-                <h3 class="text-lg font-semibold leading-tight">{{
-                    truncateText(item?.title || 'No title', 75, true)
-                  }}</h3>
-                <div class="flex justify-between items-center text-xs">
-                  <span class="text-gray-600">📰 {{ item?.provider || 'Unknown provider' }}</span>
-                  <span class="text-gray-500">{{ formatDate(item?.date_published) }}</span>
+            >
+              <!-- Article card content -->
+              <div class="flex mb-3">
+                <img
+                    :src="item?.image_url || defaultThumbnail"
+                    alt="Article Thumbnail"
+                    class="w-1/3 h-24 object-cover rounded-lg mr-4"
+                >
+                <div class="flex-grow flex flex-col justify-between">
+                  <h3 class="text-lg font-semibold leading-tight">{{
+                      truncateText(item?.title || 'No title', 75, true)
+                    }}</h3>
+                  <div class="flex justify-between items-center text-xs">
+                    <span class="text-gray-600">📰 {{ item?.provider || 'Unknown provider' }}</span>
+                    <span class="text-gray-500">{{ formatDate(item?.date_published) }}</span>
+                  </div>
                 </div>
               </div>
-            </div>
-            <p class="text-sm text-gray-600 mb-2">{{
-                truncateText(item?.description || 'No description available', 200)
-              }}</p>
-            <div class="flex justify-between items-center text-xs">
-              <span class="text-blue-600">#{{ item?.category || 'Uncategorized' }}</span>
-              <span class="text-gray-500">{{ item?.related_countries.join(', ') }}</span> <a :href="item?.url"
-                                                                                             target="_blank"
-                                                                                             rel="noopener noreferrer"
-                                                                                             class="text-blue-600 hover:text-blue-800 font-medium">
-              Read More →
-            </a>
+              <p class="text-sm text-gray-600 mb-2">{{
+                  truncateText(item?.description || 'No description available', 200)
+                }}</p>
+              <div class="flex justify-between items-center text-xs">
+                <span class="text-blue-600">#{{ item?.category || 'Uncategorized' }}</span>
+                <span class="text-gray-500">{{ item?.related_countries?.join(', ') || '' }}</span>
+                <a :href="item?.url"
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   class="text-blue-600 hover:text-blue-800 font-medium">
+                  Read More →
+                </a>
+              </div>
             </div>
           </div>
         </div>
