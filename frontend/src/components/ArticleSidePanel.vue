@@ -38,7 +38,7 @@
           <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
         </div>
         <!-- Error message -->
-        <div v-else-if="error" class="font-semibold text-red-600 pt-10 ext-center">
+        <div v-else-if="error" class="font-semibold text-red-600 pt-10 text-center">
           {{ error }}
         </div>
         <!-- Informational message -->
@@ -47,7 +47,11 @@
         </div>
         <!-- Article list -->
         <div v-else class="space-y-4">
+          <div v-if="loadedArticles.length === 0" class="text-gray-800 text-center pt-10">
+            No articles found for in the selected date range.
+          </div>
           <div
+              v-else
               v-for="(item, index) in loadedArticles"
               :key="index"
               @click="handleArticleClick(item)"
@@ -78,12 +82,13 @@
               }}</p>
             <div class="flex justify-between items-center text-xs">
               <span class="text-blue-600">#{{ item?.category || 'Uncategorized' }}</span>
-              <span class="text-gray-500">{{ item?.related_countries.join(', ') }}</span> <a :href="item?.url"
-                                                                                             target="_blank"
-                                                                                             rel="noopener noreferrer"
-                                                                                             class="text-blue-600 hover:text-blue-800 font-medium">
-              Read More →
-            </a>
+              <span class="text-gray-500">{{ item?.related_countries?.join(', ') || '' }}</span>
+              <a :href="item?.url"
+                 target="_blank"
+                 rel="noopener noreferrer"
+                 class="text-blue-600 hover:text-blue-800 font-medium">
+                Read More →
+              </a>
             </div>
           </div>
         </div>
